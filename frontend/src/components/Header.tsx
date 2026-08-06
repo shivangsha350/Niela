@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useShop } from "@/context/ShopContext";
-import { mockProducts } from "@/data/products";
+import { useShop, Product } from "@/context/ShopContext";
 import { 
   FiSearch, 
   FiShoppingBag, 
@@ -28,7 +27,8 @@ export default function Header() {
     removeFromCart, 
     wishlist, 
     user, 
-    logoutUser 
+    logoutUser,
+    products
   } = useShop();
 
   const pathname = usePathname();
@@ -39,7 +39,7 @@ export default function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<typeof mockProducts>([]);
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
 
   // Detect scroll to style the header sticky bar
   useEffect(() => {
@@ -59,13 +59,13 @@ export default function Header() {
     if (searchQuery.trim() === "") {
       setSearchResults([]);
     } else {
-      const filtered = mockProducts.filter((product) =>
+      const filtered = products.filter((product) =>
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.description.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setSearchResults(filtered);
     }
-  }, [searchQuery]);
+  }, [searchQuery, products]);
 
   // Close menus when route changes
   useEffect(() => {

@@ -1,31 +1,45 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { Product, useShop } from "@/context/ShopContext";
-import { mockProducts } from "@/data/products";
 import { FiStar, FiHeart, FiShoppingBag, FiPlus, FiMinus, FiCheckCircle } from "react-icons/fi";
 
 interface ClientProps {
   product: Product;
 }
 
-export default function ProductDetailsClient({ product }: ClientProps) {
-  const { addToCart, toggleWishlist, isInWishlist } = useShop();
+export default function ProductDetailsClient({ product: initialProduct }: ClientProps) {
+  const { products, addToCart, toggleWishlist, isInWishlist } = useShop();
+
+  // Find the product dynamically in ShopContext to ensure edits from admin panel are reflected
+  const product = products.find((p) => p._id === initialProduct._id) || initialProduct;
 
   const [activeImage, setActiveImage] = useState(product.images[0]);
   const [selectedVariant, setSelectedVariant] = useState(
-    product.variants ? product.variants[0] : "Regular"
+    product.variants && product.variants.length > 0 ? product.variants[0] : "Regular"
   );
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("features");
   const [isAdding, setIsAdding] = useState(false);
 
+  // Sync state if product changes (e.g., after edit in admin panel)
+  useEffect(() => {
+    if (product) {
+      if (product.images && product.images.length > 0 && !product.images.includes(activeImage)) {
+        setActiveImage(product.images[0]);
+      }
+      if (product.variants && product.variants.length > 0 && !product.variants.includes(selectedVariant)) {
+        setSelectedVariant(product.variants[0] || "Regular");
+      }
+    }
+  }, [product, activeImage, selectedVariant]);
+
   const favorited = isInWishlist(product._id);
-  const otherProducts = mockProducts.filter((p) => p._id !== product._id).slice(0, 3);
+  const otherProducts = products.filter((p) => p._id !== product._id).slice(0, 3);
 
   const handleAddToCart = () => {
     setIsAdding(true);
@@ -111,17 +125,29 @@ export default function ProductDetailsClient({ product }: ClientProps) {
                 )}
 
                 {/* Price */}
-                <div className="flex items-baseline space-x-3 pt-2">
-                  <span className="font-bold text-2xl text-brand-navy">₹{product.price}</span>
-                  {product.originalPrice && (
-                    <span className="text-sm text-brand-slate line-through">₹{product.originalPrice}</span>
-                  )}
-                  {product.originalPrice && (
-                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                      Save ₹{product.originalPrice - product.price}
-                    </span>
-                  )}
-                </div>
+                {(() => {
+                  const displayPrice = product.variantPrices && product.variantPrices[selectedVariant] 
+                    ? product.variantPrices[selectedVariant] 
+                    : product.price;
+
+                  const displayOriginalPrice = product.variantOriginalPrices && product.variantOriginalPrices[selectedVariant] 
+                    ? product.variantOriginalPrices[selectedVariant] 
+                    : product.originalPrice;
+
+                  return (
+                    <div className="flex items-baseline space-x-3 pt-2">
+                      <span className="font-bold text-2xl text-brand-navy">₹{displayPrice}</span>
+                      {displayOriginalPrice && (
+                        <span className="text-sm text-brand-slate line-through">₹{displayOriginalPrice}</span>
+                      )}
+                      {displayOriginalPrice && displayOriginalPrice > displayPrice && (
+                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                          Save ₹{displayOriginalPrice - displayPrice}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 <p className="text-sm sm:text-base text-brand-slate leading-relaxed pt-2">
                   {product.description}
@@ -154,30 +180,38 @@ export default function ProductDetailsClient({ product }: ClientProps) {
                 {/* Action panel: Counter, Add to Cart & Wishlist */}
                 <div className="flex flex-col sm:flex-row gap-4 pt-6">
                   {/* Quantity Counter */}
-                  <div className="flex items-center justify-between border border-brand-border rounded-xl px-4 py-2.5 bg-brand-bg min-w-[120px] self-start sm:self-auto">
-                    <button
-                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                      className="p-1 text-brand-navy hover:text-brand-pink transition"
-                    >
-                      <FiMinus className="w-4 h-4" />
-                    </button>
-                    <span className="font-bold text-sm text-brand-navy px-4">{quantity}</span>
-                    <button
-                      onClick={() => setQuantity((q) => q + 1)}
-                      className="p-1 text-brand-navy hover:text-brand-pink transition"
-                    >
-                      <FiPlus className="w-4 h-4" />
-                    </button>
-                  </div>
+                  {product.stock > 0 && (
+                    <div className="flex items-center justify-between border border-brand-border rounded-xl px-4 py-2.5 bg-brand-bg min-w-[120px] self-start sm:self-auto">
+                      <button
+                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                        className="p-1 text-brand-navy hover:text-brand-pink transition"
+                      >
+                        <FiMinus className="w-4 h-4" />
+                      </button>
+                      <span className="font-bold text-sm text-brand-navy px-4">{quantity}</span>
+                      <button
+                        onClick={() => setQuantity((q) => q + 1)}
+                        className="p-1 text-brand-navy hover:text-brand-pink transition"
+                      >
+                        <FiPlus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
 
                   {/* Add to Cart button */}
                   <button
                     onClick={handleAddToCart}
-                    disabled={isAdding}
-                    className="flex-1 bg-brand-navy text-white px-8 py-3.5 rounded-xl text-sm font-semibold hover:bg-brand-navy/95 transition duration-200 shadow-md flex items-center justify-center gap-2"
+                    disabled={isAdding || product.stock <= 0}
+                    className={`flex-1 px-8 py-3.5 rounded-xl text-sm font-semibold transition duration-200 shadow-md flex items-center justify-center gap-2 ${
+                      product.stock > 0
+                        ? "bg-brand-navy hover:bg-brand-navy/95 text-white cursor-pointer"
+                        : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+                    }`}
                   >
                     <FiShoppingBag className="w-4 h-4" />
-                    {isAdding ? "Adding to Cart..." : "Add to Cart"}
+                    {product.stock > 0 
+                      ? (isAdding ? "Adding to Cart..." : "Add to Cart") 
+                      : "Out of Stock"}
                   </button>
 
                   {/* Wishlist Button */}

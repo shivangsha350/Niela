@@ -25,6 +25,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Authenticate Admin session status
   useEffect(() => {
+    if (pathname === "/admin/login") {
+      return;
+    }
     if (!loading) {
       if (!user || user.role !== "admin") {
         router.push("/admin/login");
@@ -32,7 +35,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setAuthorized(true);
       }
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, pathname]);
 
   const handleLogout = () => {
     logoutUser();
@@ -46,6 +49,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: "Orders Manager", path: "/admin/orders", icon: <FiTruck className="w-4 h-4" /> },
     { label: "Customer Enquiries", path: "/admin/customers", icon: <FiUsers className="w-4 h-4" /> },
   ];
+
+  if (pathname === "/admin/login") {
+    return <>{children}</>;
+  }
 
   if (loading || !authorized) {
     return (

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { mockProducts } from "@/data/products";
 
 export interface Product {
   _id: string;
@@ -16,6 +17,8 @@ export interface Product {
   reviewsCount?: number;
   features?: string[];
   variants?: string[]; // e.g., ["Regular", "Super", "Super Plus"]
+  variantPrices?: { [variantName: string]: number };
+  variantOriginalPrices?: { [variantName: string]: number };
 }
 
 export interface CartItem {
@@ -37,6 +40,8 @@ interface ShopContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
+  products: Product[];
+  updateProductsList: (newList: Product[]) => void;
   addToCart: (product: Product, quantity?: number, variant?: string) => void;
   removeFromCart: (productId: string, variant: string) => void;
   updateCartQuantity: (productId: string, variant: string, quantity: number) => void;
@@ -56,6 +61,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [wishlist, setWishlist] = useState<Product[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Load state on mount
@@ -65,6 +71,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const storedWishlist = localStorage.getItem("niela_wishlist");
       const storedUser = localStorage.getItem("niela_user");
       const storedToken = localStorage.getItem("niela_token");
+      const storedProducts = localStorage.getItem("niela_admin_products");
 
       if (storedCart) {
         try { setCart(JSON.parse(storedCart)); } catch (e) { console.error(e); }
@@ -77,6 +84,12 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       if (storedToken) {
         setToken(storedToken);
+      }
+      if (storedProducts) {
+        try { setProducts(JSON.parse(storedProducts)); } catch (e) { console.error(e); }
+      } else {
+        setProducts(mockProducts);
+        localStorage.setItem("niela_admin_products", JSON.stringify(mockProducts));
       }
       setLoading(false);
     }
@@ -102,13 +115,31 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         (item) => item.product._id === product._id && item.selectedVariant === variant
       );
 
+      // Extract variant price if it exists
+      let finalPrice = product.price;
+      let finalOriginalPrice = product.originalPrice;
+      if (product.variantPrices && product.variantPrices[variant]) {
+        finalPrice = product.variantPrices[variant];
+      }
+      if (product.variantOriginalPrices && product.variantOriginalPrices[variant]) {
+        finalOriginalPrice = product.variantOriginalPrices[variant];
+      }
+
+      // Create a copy of the product with the variant-specific price
+      const productWithVariantPrice = {
+        ...product,
+        price: finalPrice,
+        originalPrice: finalOriginalPrice,
+      };
+
       if (existingItemIndex > -1) {
         const newCart = [...prevCart];
         newCart[existingItemIndex].quantity += quantity;
+        newCart[existingItemIndex].product = productWithVariantPrice;
         return newCart;
       }
 
-      return [...prevCart, { product, quantity, selectedVariant: variant }];
+      return [...prevCart, { product: productWithVariantPrice, quantity, selectedVariant: variant }];
     });
   };
 
@@ -165,6 +196,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCart([]);
   };
 
+  const updateProductsList = (newList: Product[]) => {
+    setProducts(newList);
+    localStorage.setItem("niela_admin_products", JSON.stringify(newList));
+  };
+
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
   
   const cartSubtotal = cart.reduce((total, item) => total + item.product.price * item.quantity, 0);
@@ -177,6 +213,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         token,
         loading,
+        products,
+        updateProductsList,
         addToCart,
         removeFromCart,
         updateCartQuantity,

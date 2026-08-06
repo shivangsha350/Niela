@@ -2,13 +2,14 @@
 
 import React from "react";
 import Link from "next/link";
-import { mockProducts } from "@/data/products";
+import { useShop } from "@/context/ShopContext";
 import ProductCard from "./ProductCard";
 import { FiArrowRight } from "react-icons/fi";
 
 export default function ProductGrid() {
+  const { products } = useShop();
   // Show all products in the grid
-  const displayedProducts = mockProducts.slice(0, 4);
+  const displayedProducts = products.slice(0, 4);
 
   return (
     <section className="w-full py-16 sm:py-24 bg-brand-bg">

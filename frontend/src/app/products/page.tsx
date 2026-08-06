@@ -5,16 +5,17 @@ import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
-import { mockProducts } from "@/data/products";
+import { useShop } from "@/context/ShopContext";
 import { FiFilter, FiChevronDown } from "react-icons/fi";
 
 function ProductsCatalog() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
+  const { products } = useShop();
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
-  const [filteredProducts, setFilteredProducts] = useState(mockProducts);
+  const [filteredProducts, setFilteredProducts] = useState<typeof products>([]);
 
   // Sync category filter with search parameters (e.g. ?category=pads)
   useEffect(() => {
@@ -27,7 +28,7 @@ function ProductsCatalog() {
 
   // Filter and sort products
   useEffect(() => {
-    let result = [...mockProducts];
+    let result = [...products];
 
     // Filter by Category
     if (selectedCategory !== "all") {
@@ -46,7 +47,7 @@ function ProductsCatalog() {
     }
 
     setFilteredProducts(result);
-  }, [selectedCategory, sortBy]);
+  }, [products, selectedCategory, sortBy]);
 
   const categories = [
     { value: "all", label: "All Products" },

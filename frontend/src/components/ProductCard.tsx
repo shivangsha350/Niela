@@ -60,9 +60,14 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
-          {product.originalPrice && product.originalPrice > product.price && (
+          {product.originalPrice && product.originalPrice > product.price && product.stock > 0 && (
             <span className="absolute bottom-4 left-4 bg-brand-pink text-white text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full">
               Sale -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+            </span>
+          )}
+          {product.stock <= 0 && (
+            <span className="absolute inset-0 bg-black/45 flex items-center justify-center text-white text-xs uppercase font-bold tracking-wider">
+              Out of Stock
             </span>
           )}
         </div>
@@ -107,15 +112,19 @@ export default function ProductCard({ product }: ProductCardProps) {
             {/* Quick Add to Cart Button */}
             <button
               onClick={handleAddToCart}
-              disabled={isAdding}
+              disabled={isAdding || product.stock <= 0}
               className={`p-2.5 rounded-xl transition-all duration-300 flex items-center justify-center ${
-                isAdding 
-                  ? "bg-brand-pink text-white" 
-                  : "bg-brand-navy/5 text-brand-navy hover:bg-brand-navy hover:text-white"
+                product.stock <= 0
+                  ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                  : isAdding 
+                    ? "bg-brand-pink text-white" 
+                    : "bg-brand-navy/5 text-brand-navy hover:bg-brand-navy hover:text-white"
               }`}
-              title="Add to Cart"
+              title={product.stock <= 0 ? "Out of Stock" : "Add to Cart"}
             >
-              {isAdding ? (
+              {product.stock <= 0 ? (
+                <span className="text-[10px] font-bold text-slate-400 px-1">Sold Out</span>
+              ) : isAdding ? (
                 <span className="text-xs font-bold px-1 animate-pulse">Added!</span>
               ) : (
                 <FiShoppingBag className="w-4 h-4" />

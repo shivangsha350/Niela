@@ -15,7 +15,41 @@ export default function ContactPage() {
     e.preventDefault();
     if (!name || !email || !message) return;
 
-    // Simulate API query dispatch
+    // Create a new enquiry object
+    const newEnquiry = {
+      id: `enq-${Date.now()}`,
+      name,
+      email,
+      message,
+      status: "Pending" as const,
+      createdAt: new Date().toISOString()
+    };
+
+    // Load existing enquiries, append, and save
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("niela_admin_enquiries");
+      const currentList = stored ? JSON.parse(stored) : [
+        {
+          id: "enq-1",
+          name: "Rohan Varma",
+          email: "rohan@gmail.com",
+          message: "Hi, I am interested in subscribing to the Starter Kit for my wife, but I want to customize the regular pad counts. Is that possible?",
+          status: "Pending",
+          createdAt: "2026-07-30T10:30:00.000Z"
+        },
+        {
+          id: "enq-2",
+          name: "Dr. Anjali Bose",
+          email: "anjali.bose@yahoo.com",
+          message: "Hello Niela team. Do you offer bulk discounts for hospitals or female hygiene awareness campaigns? Looking forward to partnering.",
+          status: "Resolved",
+          createdAt: "2026-07-29T14:20:00.000Z"
+        }
+      ];
+      const updatedList = [newEnquiry, ...currentList];
+      localStorage.setItem("niela_admin_enquiries", JSON.stringify(updatedList));
+    }
+
     setSubmitted(true);
     setName("");
     setEmail("");
