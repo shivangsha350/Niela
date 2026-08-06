@@ -198,7 +198,12 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateProductsList = (newList: Product[]) => {
     setProducts(newList);
-    localStorage.setItem("niela_admin_products", JSON.stringify(newList));
+    try {
+      localStorage.setItem("niela_admin_products", JSON.stringify(newList));
+    } catch (e) {
+      console.error("Failed to save products to localStorage:", e);
+      alert("Storage Quota Exceeded! The uploaded image file size is too large for the browser's storage capacity. Please use a smaller file or clear your browser data.");
+    }
   };
 
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);

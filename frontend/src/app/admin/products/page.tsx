@@ -63,16 +63,62 @@ export default function AdminProductsCrudPage() {
     setIsModalOpen(true);
   };
 
+  const compressImage = (base64Str: string): Promise<string> => {
+    return new Promise((resolve) => {
+      // If it's not a base64 data URI, bypass compression
+      if (!base64Str.startsWith("data:image/")) {
+        resolve(base64Str);
+        return;
+      }
+      const img = new Image();
+      img.src = base64Str;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 500;
+        const MAX_HEIGHT = 500;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        // Convert to high compression JPEG
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
+        resolve(dataUrl);
+      };
+      img.onerror = () => {
+        resolve(base64Str);
+      };
+    });
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    // Process each selected file to base64
+    // Process each selected file, convert to base64 and compress
     const filePromises = Array.from(files).map((file) => {
       return new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onload = (event) => {
-          resolve(event.target?.result as string);
+          const rawBase64 = event.target?.result as string;
+          compressImage(rawBase64).then((compressedBase64) => {
+            resolve(compressedBase64);
+          });
         };
         reader.readAsDataURL(file);
       });
