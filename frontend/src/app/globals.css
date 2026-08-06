@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-sans), system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-serif), Georgia, serif;
+
+  --color-brand-navy: #1e3a5f;
+  --color-brand-dark-navy: #0f1f35;
+  --color-brand-pink: #c47a8a;
+  --color-brand-pink-light: #fdf5f5;
+  --color-brand-bg: #f7f9fc;
+  --color-brand-card: #ffffff;
+  --color-brand-card-hover: #f3f7fa;
+  --color-brand-border: #e2e8f0;
+  --color-brand-slate: #5a738e;
+  --color-brand-gold: #b89765;
+}
+
+:root {
+  --font-sans: "Inter", sans-serif;
+  --font-serif: "Playfair Display", serif;
+}
+
+/* Custom Utilities & Base Elements */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  background-color: var(--color-brand-bg);
+  color: var(--color-brand-dark-navy);
+}
+
+/* Draggable handle line alignment for comparison slider */
+.slider-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 9999px;
+  background-color: white;
+  z-index: 10;
+}
+
+/* Custom Scrollbar for premium visual polish */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f7f9fc;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Glassmorphism utility classes */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
