@@ -29,8 +29,16 @@ export const apiService = {
       const response = await api.post("/auth/login", { email, password });
       return response.data;
     },
-    register: async (name: string, email: string, password: string) => {
-      const response = await api.post("/auth/register", { name, email, password });
+    sendOtp: async (email: string) => {
+      const response = await api.post("/auth/send-otp", { email });
+      return response.data;
+    },
+    register: async (name: string, email: string, password: string, otp: string) => {
+      const response = await api.post("/auth/register", { name, email, password, otp });
+      return response.data;
+    },
+    googleLogin: async (name: string, email: string, googleId: string) => {
+      const response = await api.post("/auth/google-login", { name, email, googleId });
       return response.data;
     },
     getProfile: async () => {
