@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useShop } from "@/context/ShopContext";
+import apiService from "@/services/api";
 
 export default function CheckoutPage() {
   const { cart, cartSubtotal, clearCart, user } = useShop();
@@ -17,9 +18,24 @@ export default function CheckoutPage() {
   const [zip, setZip] = useState("");
   const [phone, setPhone] = useState("");
   
-  const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [paymentMethod, setPaymentMethod] = useState("razorpay");
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
+
+  // Load Razorpay Script dynamically on mount
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      try {
+        document.body.removeChild(script);
+      } catch (e) {
+        // Ignored
+      }
+    };
+  }, []);
 
   // Redirect if cart is empty
   useEffect(() => {
@@ -32,55 +48,153 @@ export default function CheckoutPage() {
   const shippingFee = cartSubtotal >= 499 ? 0 : 99;
   const grandTotal = cartSubtotal + shippingFee;
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !email || !address || !city || !zip || !phone) {
       setError("Please fill in all shipping details.");
       return;
     }
 
+    if (!user) {
+      setError("Please login to place an order.");
+      router.push("/login?redirect=checkout");
+      return;
+    }
+
     setIsProcessing(true);
     setError("");
 
-    // Create a mock order object
-    const newOrder = {
-      _id: `ord-${Math.floor(100000 + Math.random() * 900000)}`,
-      items: cart.map(item => ({
-        name: item.product.name,
-        image: item.product.images[0],
-        price: item.product.price,
-        quantity: item.quantity,
-        variant: item.selectedVariant
-      })),
-      shippingDetails: {
-        fullName,
-        address,
-        city,
-        zip,
-        phone
-      },
-      paymentMethod,
-      paymentStatus: paymentMethod === "cod" ? "Pending" : "Paid",
-      orderStatus: "Processing",
-      totalAmount: grandTotal,
-      createdAt: new Date().toISOString()
-    };
+    try {
+      // 1. Create order in MongoDB backend (initial state)
+      const orderPayload = {
+        items: cart.map(item => ({
+          name: item.product.name,
+          image: item.product.images[0],
+          price: item.product.price,
+          quantity: item.quantity,
+          variant: item.selectedVariant
+        })),
+        shippingDetails: {
+          fullName,
+          address,
+          city,
+          zip,
+          phone
+        },
+        paymentMethod: "razorpay",
+        totalAmount: grandTotal
+      };
 
-    setTimeout(() => {
-      // Save order to localStorage order list
-      if (typeof window !== "undefined") {
-        const storedOrders = localStorage.getItem("niela_orders");
-        const ordersList = storedOrders ? JSON.parse(storedOrders) : [];
-        ordersList.unshift(newOrder);
-        localStorage.setItem("niela_orders", JSON.stringify(ordersList));
+      const backendOrder = await apiService.orders.create(orderPayload);
+
+      // 2. Generate Razorpay ticket
+      const paymentTicket = await apiService.payments.createOrder(grandTotal);
+
+      // 3. Handle payment (Simulated vs Real)
+      if (paymentTicket.simulated) {
+        // If simulation mode is active (because keys are not set)
+        // Automatically verify payment on backend
+        const verifyResponse = await apiService.payments.verifySignature({
+          orderId: backendOrder._id,
+          razorpay_order_id: paymentTicket.id,
+          razorpay_payment_id: "sim_pay_" + Math.floor(100000 + Math.random() * 900000),
+          razorpay_signature: "simulated_signature"
+        });
+
+        if (verifyResponse.success) {
+          // Sync with frontend LocalStorage orders
+          const finalOrder = {
+            ...backendOrder,
+            paymentStatus: "Paid",
+            paymentId: "sim_pay_12345",
+            createdAt: new Date().toISOString()
+          };
+
+          if (typeof window !== "undefined") {
+            const storedOrders = localStorage.getItem("niela_orders");
+            const ordersList = storedOrders ? JSON.parse(storedOrders) : [];
+            ordersList.unshift(finalOrder);
+            localStorage.setItem("niela_orders", JSON.stringify(ordersList));
+          }
+
+          clearCart();
+          setIsProcessing(false);
+          router.push(`/orders/${backendOrder._id}`);
+        } else {
+          throw new Error("Simulated payment verification failed");
+        }
+      } else {
+        // Real Razorpay Checkout flow
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_mock",
+          amount: paymentTicket.amount,
+          currency: paymentTicket.currency,
+          name: "Niela Care",
+          description: "Organic Period Care Purchase",
+          order_id: paymentTicket.id,
+          handler: async function (response: any) {
+            try {
+              const verifyResponse = await apiService.payments.verifySignature({
+                orderId: backendOrder._id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              });
+
+              if (verifyResponse.success) {
+                const finalOrder = {
+                  ...backendOrder,
+                  paymentStatus: "Paid",
+                  paymentId: response.razorpay_payment_id,
+                  createdAt: new Date().toISOString()
+                };
+
+                if (typeof window !== "undefined") {
+                  const storedOrders = localStorage.getItem("niela_orders");
+                  const ordersList = storedOrders ? JSON.parse(storedOrders) : [];
+                  ordersList.unshift(finalOrder);
+                  localStorage.setItem("niela_orders", JSON.stringify(ordersList));
+                }
+
+                clearCart();
+                setIsProcessing(false);
+                router.push(`/orders/${backendOrder._id}`);
+              } else {
+                setError("Payment signature verification failed. Please contact support.");
+                setIsProcessing(false);
+              }
+            } catch (verifyErr: any) {
+              setError(verifyErr.message || "Payment verification failed. Please try again.");
+              setIsProcessing(false);
+            }
+          },
+          prefill: {
+            name: fullName,
+            email: email,
+            contact: phone
+          },
+          theme: {
+            color: "#db2777"
+          },
+          modal: {
+            ondismiss: function () {
+              setError("Payment cancelled by user.");
+              setIsProcessing(false);
+            }
+          }
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
       }
-
-      clearCart();
+    } catch (err: any) {
       setIsProcessing(false);
-      
-      // Redirect to Order Confirmation / Tracking Page
-      router.push(`/orders/${newOrder._id}`);
-    }, 1500);
+      setError(
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to place order. Please try again."
+      );
+    }
   };
 
   return (
@@ -185,30 +299,14 @@ export default function CheckoutPage() {
                 </h3>
                 
                 <div className="space-y-3">
-                  {/* COD */}
-                  <label className="flex items-center gap-3 p-4 border border-brand-border rounded-xl hover:border-brand-pink transition cursor-pointer">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="cod"
-                      checked={paymentMethod === "cod"}
-                      onChange={() => setPaymentMethod("cod")}
-                      className="accent-brand-navy w-4 h-4"
-                    />
-                    <div>
-                      <p className="text-sm font-semibold text-brand-navy">Cash on Delivery (COD)</p>
-                      <p className="text-xs text-brand-slate">Pay with cash at your doorstep upon package delivery.</p>
-                    </div>
-                  </label>
-
-                  {/* Razorpay mock */}
-                  <label className="flex items-center gap-3 p-4 border border-brand-border rounded-xl hover:border-brand-pink transition cursor-pointer">
+                  {/* Razorpay Option only (COD removed) */}
+                  <label className="flex items-center gap-3 p-4 border border-brand-pink bg-brand-bg/20 rounded-xl cursor-pointer">
                     <input
                       type="radio"
                       name="payment"
                       value="razorpay"
-                      checked={paymentMethod === "razorpay"}
-                      onChange={() => setPaymentMethod("razorpay")}
+                      checked={true}
+                      readOnly
                       className="accent-brand-navy w-4 h-4"
                     />
                     <div>
