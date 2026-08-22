@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth.js";
 import productRoutes from "./routes/products.js";
 import orderRoutes from "./routes/orders.js";
 import enquiryRoutes from "./routes/enquiries.js";
+import testEmailRoutes from "./routes/test-email.js";
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api", productRoutes);
 app.use("/api", orderRoutes);
 app.use("/api", enquiryRoutes);
+app.use("/api", testEmailRoutes);
 
 // Root Ping Health Check
 app.get("/", (req, res) => {

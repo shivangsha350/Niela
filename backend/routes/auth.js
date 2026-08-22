@@ -1,5 +1,6 @@
 import express from "express";
 import jwt from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
 import User from "../models/User.js";
 import Otp from "../models/Otp.js";
 import sendEmail from "../utils/mailer.js";
@@ -144,24 +145,74 @@ router.post("/login", async (req, res) => {
 // @desc    Register or login user with Google credentials
 // @access  Public
 router.post("/google-login", async (req, res) => {
-  const { name, email, googleId } = req.body;
-  if (!email || !name) {
-    return res.status(400).json({ message: "Invalid Google user data." });
+  const { name, email, googleId, token } = req.body;
+
+  let gId, gEmail, gName, gPicture;
+
+  if (process.env.GOOGLE_CLIENT_ID) {
+    if (!token) {
+      return res.status(400).json({ message: "Google ID token is required." });
+    }
+    try {
+      const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+      const ticket = await googleClient.verifyIdToken({
+        idToken: token,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      
+      if (!payload || !payload.email_verified) {
+        return res.status(400).json({ message: "Google email is not verified." });
+      }
+
+      gId = payload.sub;
+      gEmail = payload.email;
+      gName = payload.name;
+      gPicture = payload.picture;
+    } catch (err) {
+      console.error("Token verification error:", err);
+      return res.status(401).json({ message: "Invalid or expired Google token." });
+    }
+  } else {
+    // Fallback for development without GOOGLE_CLIENT_ID configured
+    if (!googleId || !email || !name) {
+      return res.status(400).json({ message: "Invalid Google user data." });
+    }
+    gId = googleId;
+    gEmail = email;
+    gName = name;
+    gPicture = "";
   }
 
   try {
-    let user = await User.findOne({ email });
+    // 1. Search for user by googleId
+    let user = await User.findOne({ googleId: gId });
 
     if (!user) {
-      // User doesn't exist, create a new one with a random password
-      const randomPassword = Math.random().toString(36).slice(-8);
-      const role = email.toLowerCase() === "admin@niela.com" ? "admin" : "user";
-      user = await User.create({
-        name,
-        email,
-        password: randomPassword,
-        role
-      });
+      // 2. If not found by googleId, check by email (Account Linking)
+      user = await User.findOne({ email: gEmail.toLowerCase() });
+
+      if (user) {
+        // Link googleId to existing user account
+        user.googleId = gId;
+        user.authProvider = "google";
+        if (gPicture && !user.profilePicture) {
+          user.profilePicture = gPicture;
+        }
+        await user.save();
+      } else {
+        // 3. Create a new user if they don't exist
+        const role = gEmail.toLowerCase() === "admin@niela.com" ? "admin" : "user";
+        user = new User({
+          name: gName,
+          email: gEmail.toLowerCase(),
+          googleId: gId,
+          authProvider: "google",
+          profilePicture: gPicture,
+          role,
+        });
+        await user.save();
+      }
     }
 
     res.status(200).json({

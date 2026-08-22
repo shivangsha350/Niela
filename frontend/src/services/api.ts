@@ -37,8 +37,8 @@ export const apiService = {
       const response = await api.post("/auth/register", { name, email, password, otp });
       return response.data;
     },
-    googleLogin: async (name: string, email: string, googleId: string) => {
-      const response = await api.post("/auth/google-login", { name, email, googleId });
+    googleLogin: async (name?: string, email?: string, googleId?: string, token?: string) => {
+      const response = await api.post("/auth/google-login", { name, email, googleId, token });
       return response.data;
     },
     getProfile: async () => {
