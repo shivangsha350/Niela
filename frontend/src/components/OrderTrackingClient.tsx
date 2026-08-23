@@ -5,6 +5,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { FiCheckCircle, FiPackage, FiTruck, FiSmile } from "react-icons/fi";
+import apiService from "@/services/api";
 
 interface OrderItem {
   name: string;
@@ -36,21 +37,38 @@ export default function OrderTrackingClient({ orderId }: { orderId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedOrders = localStorage.getItem("niela_orders");
-      if (storedOrders) {
-        try {
-          const ordersList: OrderDetails[] = JSON.parse(storedOrders);
-          const foundOrder = ordersList.find(o => o._id === orderId);
-          if (foundOrder) {
-            setOrder(foundOrder);
+    const fetchOrderDetails = async () => {
+      try {
+        setLoading(true);
+        const data = await apiService.orders.getDetails(orderId);
+        if (data) {
+          setOrder(data);
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.warn("API order details fetch failed, trying local fallback:", err);
+      }
+
+      // Fallback to localStorage
+      if (typeof window !== "undefined") {
+        const storedOrders = localStorage.getItem("niela_orders");
+        if (storedOrders) {
+          try {
+            const ordersList: OrderDetails[] = JSON.parse(storedOrders);
+            const foundOrder = ordersList.find(o => o._id === orderId);
+            if (foundOrder) {
+              setOrder(foundOrder);
+            }
+          } catch (e) {
+            console.error(e);
           }
-        } catch (e) {
-          console.error(e);
         }
       }
       setLoading(false);
-    }
+    };
+
+    fetchOrderDetails();
   }, [orderId]);
 
   if (loading) {

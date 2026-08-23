@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { FiChevronDown, FiTruck, FiMapPin } from "react-icons/fi";
+import apiService from "@/services/api";
 
 interface OrderItem {
   name: string;
@@ -29,22 +30,38 @@ interface OrderDetails {
 
 export default function AdminOrdersManagerPage() {
   const [orders, setOrders] = useState<OrderDetails[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const data = await apiService.admin.getAllOrders();
+      setOrders(data);
+      setError("");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.response?.data?.message || err.message || "Failed to fetch orders");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("niela_orders");
-      if (stored) {
-        setOrders(JSON.parse(stored));
-      }
-    }
+    fetchOrders();
   }, []);
 
-  const handleUpdateStatus = (orderId: string, newStatus: string) => {
-    const updated = orders.map((o) =>
-      o._id === orderId ? { ...o, orderStatus: newStatus } : o
-    );
-    setOrders(updated);
-    localStorage.setItem("niela_orders", JSON.stringify(updated));
+  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+    try {
+      await apiService.admin.updateOrderStatus(orderId, newStatus);
+      const updated = orders.map((o) =>
+        o._id === orderId ? { ...o, orderStatus: newStatus } : o
+      );
+      setOrders(updated);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message || "Failed to update order status");
+    }
   };
 
   return (
@@ -55,7 +72,15 @@ export default function AdminOrdersManagerPage() {
       </div>
 
       <div className="space-y-6">
-        {orders.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-20 bg-white rounded-3xl border border-brand-border/60">
+            <div className="w-8 h-8 border-2 border-brand-navy border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 text-red-600 rounded-3xl border border-red-200 p-8 text-center text-xs sm:text-sm font-semibold">
+            {error}
+          </div>
+        ) : orders.length === 0 ? (
           <div className="bg-white rounded-3xl border border-brand-border/60 p-12 text-center text-brand-slate text-xs sm:text-sm">
             No orders have been received yet.
           </div>

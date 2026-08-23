@@ -13,7 +13,8 @@ import {
   FiHome, 
   FiLogOut,
   FiMenu,
-  FiX
+  FiX,
+  FiLock
 } from "react-icons/fi";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -48,6 +49,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: "Categories CRUD", path: "/admin/categories", icon: <FiLayers className="w-4 h-4" /> },
     { label: "Orders Manager", path: "/admin/orders", icon: <FiTruck className="w-4 h-4" /> },
     { label: "Customer Enquiries", path: "/admin/customers", icon: <FiUsers className="w-4 h-4" /> },
+    { label: "Change Password", path: "/admin/settings", icon: <FiLock className="w-4 h-4" /> },
   ];
 
   if (pathname === "/admin/login") {

@@ -243,4 +243,37 @@ router.get("/profile", protect, async (req, res) => {
   }
 });
 
+// @route   PUT /api/auth/update-password
+// @desc    Update user password
+// @access  Private
+router.put("/update-password", protect, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: "Please provide current and new passwords." });
+  }
+
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    if (user.authProvider !== "local") {
+      return res.status(400).json({ message: "Cannot change password for external accounts." });
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Current password is incorrect." });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: "Password updated successfully." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;

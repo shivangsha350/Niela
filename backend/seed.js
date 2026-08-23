@@ -36,7 +36,7 @@ const products = [
     description: "Engineered for maximum comfort and ultimate leak protection. Our organic cotton pads feature an ultra-absorbent core that locks away heavy flows while staying soft on your skin.",
     price: 349,
     originalPrice: 399,
-    images: ["/images/regular_pads.png"],
+    images: ["/images/regular_pads.png", "/images/pads_purple.png", "/images/pads_green.png"],
     category: "pads",
     stock: 75,
     rating: 4.9,

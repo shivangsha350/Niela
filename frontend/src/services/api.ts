@@ -45,6 +45,10 @@ export const apiService = {
       const response = await api.get("/auth/profile");
       return response.data;
     },
+    updatePassword: async (currentPassword: string, newPassword: string) => {
+      const response = await api.put("/auth/update-password", { currentPassword, newPassword });
+      return response.data;
+    },
   },
 
   // Products & Categories
