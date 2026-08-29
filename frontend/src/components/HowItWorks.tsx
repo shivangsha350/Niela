@@ -2,7 +2,7 @@
 
 import React from "react";
 import { FiSliders, FiCalendar, FiPackage, FiSmile } from "react-icons/fi";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 
 const steps = [
   {
@@ -28,7 +28,7 @@ const steps = [
 ];
 
 export default function HowItWorks() {
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: {},
     visible: {
       transition: {
@@ -38,7 +38,7 @@ export default function HowItWorks() {
     }
   };
 
-  const lineVariants = {
+  const lineVariants: Variants = {
     hidden: { scaleX: 0 },
     visible: { 
       scaleX: 1,
@@ -46,7 +46,7 @@ export default function HowItWorks() {
     }
   };
 
-  const stepVariants = {
+  const stepVariants: Variants = {
     hidden: { opacity: 0, y: 40 },
     visible: { 
       opacity: 1, 
