@@ -1,9 +1,8 @@
-import { notFound } from "next/navigation";
 import { mockProducts } from "@/data/products";
 import ProductDetailsClient from "@/components/ProductDetailsClient";
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string }> | { id: string };
 }
 
 export async function generateStaticParams() {
@@ -13,12 +12,16 @@ export async function generateStaticParams() {
 }
 
 export default async function ProductDetailPage({ params }: PageProps) {
-  const { id } = await params;
-  const product = mockProducts.find((p) => p._id === id);
-
-  if (!product) {
-    notFound();
+  let resolvedParams: any;
+  try {
+    resolvedParams = await params;
+  } catch (err: any) {
+    resolvedParams = params;
   }
 
-  return <ProductDetailsClient product={product} />;
+  const id = resolvedParams?.id;
+  const product = mockProducts.find((p) => p._id === id);
+
+  return <ProductDetailsClient productId={id} initialProduct={product} />;
 }
+

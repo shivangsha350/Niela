@@ -78,7 +78,7 @@ export default function Header() {
   return (
     <>
       {/* Announcement Bar */}
-      <div className="w-full bg-brand-dark-navy text-white text-center py-2 text-xs tracking-wider uppercase font-medium">
+      <div className="w-full bg-brand-pink text-white text-center py-2 text-xs tracking-wider uppercase font-medium">
         Free Shipping on all orders above ₹499 • 100% Biodegradable & Plastic-Free
       </div>
 

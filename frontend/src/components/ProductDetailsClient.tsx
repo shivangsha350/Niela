@@ -9,14 +9,62 @@ import { Product, useShop } from "@/context/ShopContext";
 import { FiStar, FiHeart, FiShoppingBag, FiPlus, FiMinus, FiCheckCircle } from "react-icons/fi";
 
 interface ClientProps {
-  product: Product;
+  productId: string;
+  initialProduct?: Product;
 }
 
-export default function ProductDetailsClient({ product: initialProduct }: ClientProps) {
-  const { products, addToCart, toggleWishlist, isInWishlist } = useShop();
+export default function ProductDetailsClient({ productId, initialProduct }: ClientProps) {
+  const { products, loading } = useShop();
 
-  // Find the product dynamically in ShopContext to ensure edits from admin panel are reflected
-  const product = products.find((p) => p._id === initialProduct._id) || initialProduct;
+  const product = products.find((p) => p._id === productId) || initialProduct;
+
+  if (loading && !product) {
+    return (
+      <div className="min-h-screen flex flex-col justify-between bg-brand-bg">
+        <Header />
+        <div className="flex-grow flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-2 border-brand-navy border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return <ProductNotFound />;
+  }
+
+  return <ProductDetailsInner product={product} />;
+}
+
+function ProductNotFound() {
+  return (
+    <div className="min-h-screen flex flex-col justify-between bg-brand-bg">
+      <Header />
+      <main className="flex-grow py-20 flex items-center justify-center">
+        <div className="max-w-md w-full text-center bg-white border border-brand-border/60 rounded-3xl p-10 space-y-6 shadow-sm">
+          <div className="w-16 h-16 bg-brand-pink/10 rounded-full flex items-center justify-center mx-auto text-brand-pink text-2xl">
+            🔍
+          </div>
+          <h2 className="font-serif text-2xl font-bold text-brand-navy">Product Not Found</h2>
+          <p className="text-sm text-brand-slate">
+            The product you are looking for might have been removed or does not exist.
+          </p>
+          <Link
+            href="/products"
+            className="inline-block bg-brand-navy text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-brand-navy/95 transition shadow-md"
+          >
+            Back to Shop
+          </Link>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+function ProductDetailsInner({ product }: { product: Product }) {
+  const { products, addToCart, toggleWishlist, isInWishlist } = useShop();
 
   const [activeImage, setActiveImage] = useState(product.images[0]);
   const [selectedVariant, setSelectedVariant] = useState(

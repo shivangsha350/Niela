@@ -156,7 +156,7 @@ const slides = [
     ctaText: "Shop the Collection",
     ctaLink: "/products",
     bgClass: "bg-brand-pink-light",
-    imgSrc: "/images/regular_pads.png"
+    imgSrc: "/images/Slider2.png"
   },
   {
     id: 2,
@@ -166,7 +166,7 @@ const slides = [
     ctaText: "Explore Starter Kits",
     ctaLink: "/products?category=kits",
     bgClass: "bg-emerald-50/40",
-    imgSrc: "/images/starter_kit.png"
+    imgSrc: "/images/Slider.png"
   },
   {
     id: 3,
@@ -176,7 +176,7 @@ const slides = [
     ctaText: "Shop All-Day Pads",
     ctaLink: "/products?category=all-day",
     bgClass: "bg-brand-pink-light",
-    imgSrc: "/images/regular_pads.png"
+    imgSrc: "/images/Slider1.png"
   },
   {
     id: 4,

@@ -3,17 +3,18 @@
 @theme {
   --font-sans: var(--font-sans), system-ui, -apple-system, sans-serif;
   --font-serif: var(--font-serif), Georgia, serif;
+  --font-cursive: 'Dancing Script', cursive;
 
-  --color-brand-navy: #1e3a5f;
-  --color-brand-dark-navy: #0f1f35;
-  --color-brand-pink: #c47a8a;
-  --color-brand-pink-light: #fdf5f5;
-  --color-brand-bg: #f7f9fc;
+  --color-brand-navy: #2A201C;
+  --color-brand-dark-navy: #1C1512;
+  --color-brand-pink: #E08E79;
+  --color-brand-pink-light: #FDF2EE;
+  --color-brand-bg: #FAF5EF;
   --color-brand-card: #ffffff;
-  --color-brand-card-hover: #f3f7fa;
-  --color-brand-border: #e2e8f0;
-  --color-brand-slate: #5a738e;
-  --color-brand-gold: #b89765;
+  --color-brand-card-hover: #FDFBFA;
+  --color-brand-border: #EADFD3;
+  --color-brand-slate: #7A6F68;
+  --color-brand-gold: #D29D7C;
 }
 
 :root {
