@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { FiDollarSign, FiShoppingBag, FiUsers, FiMail, FiArrowRight } from "react-icons/fi";
+import apiService from "@/services/api";
 
 interface OrderItem {
   name: string;
@@ -24,22 +25,40 @@ export default function AdminDashboardPage() {
   const [ordersCount, setOrdersCount] = useState(0);
   const [revenue, setRevenue] = useState(0);
   const [recentOrders, setRecentOrders] = useState<OrderSummary[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedOrders = localStorage.getItem("niela_orders");
-      if (storedOrders) {
-        try {
-          const list: OrderSummary[] = JSON.parse(storedOrders);
-          setOrdersCount(list.length);
-          const totalRev = list.reduce((total, order) => total + order.totalAmount, 0);
-          setRevenue(totalRev);
-          setRecentOrders(list.slice(0, 5));
-        } catch (e) {
-          console.error(e);
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const list: OrderSummary[] = await apiService.admin.getAllOrders();
+        setOrdersCount(list.length);
+        const totalRev = list.reduce((total, order) => total + order.totalAmount, 0);
+        setRevenue(totalRev);
+        setRecentOrders(list.slice(0, 5));
+      } catch (e) {
+        console.error("Failed to fetch dashboard stats from API:", e);
+        // Fallback to localStorage
+        if (typeof window !== "undefined") {
+          const storedOrders = localStorage.getItem("niela_orders");
+          if (storedOrders) {
+            try {
+              const list: OrderSummary[] = JSON.parse(storedOrders);
+              setOrdersCount(list.length);
+              const totalRev = list.reduce((total, order) => total + order.totalAmount, 0);
+              setRevenue(totalRev);
+              setRecentOrders(list.slice(0, 5));
+            } catch (err) {
+              console.error(err);
+            }
+          }
         }
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+
+    fetchStats();
   }, []);
 
   const stats = [
@@ -48,6 +67,14 @@ export default function AdminDashboardPage() {
     { label: "Active Customers", value: "1", icon: <FiUsers className="w-5 h-5 text-brand-navy" />, bg: "bg-blue-50" },
     { label: "Customer Enquiries", value: "0", icon: <FiMail className="w-5 h-5 text-brand-gold" />, bg: "bg-amber-50" },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-brand-navy border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

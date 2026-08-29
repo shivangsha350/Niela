@@ -26,64 +26,69 @@ const sendOrderConfirmationEmail = async (orderId) => {
     const order = await Order.findById(orderId).populate("user", "email name");
     if (!order) return;
 
-    const email = order.user?.email || order.shippingDetails?.fullName;
-    if (!email) return;
+    const email = order.user?.email;
+    if (!email || !email.includes("@")) {
+      console.warn(`[Mailer] Invalid or missing email address for order ${orderId}. Skipping email confirmation.`);
+      return;
+    }
 
     const itemsListHtml = order.items.map(item => `
       <tr>
-        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">
+        <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;">
           <p style="margin: 0; font-weight: 600; color: #0f172a;">${item.name}</p>
-          <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;">Variant: ${item.variant}</p>
+          <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b;">Variant: ${item.variant}</p>
         </td>
-        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #334155;">${item.quantity}</td>
-        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 600; color: #0f172a;">₹${item.price}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; color: #475569; font-size: 13px;">${item.quantity}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 600; color: #0f172a; font-size: 14px;">₹${item.price}</td>
       </tr>
     `).join("");
 
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 20px; background-color: #ffffff;">
-        <div style="text-align: center; margin-bottom: 24px;">
-          <h1 style="color: #db2777; margin: 0; font-size: 28px; font-family: Georgia, serif;">Order Confirmed!</h1>
-          <p style="color: #64748b; font-size: 14px; margin-top: 8px;">Thank you for shopping with Niela. Your order has been placed successfully.</p>
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h2 style="font-family: Georgia, serif; font-size: 34px; color: #c5a880; margin: 0; font-style: italic; font-weight: bold; letter-spacing: 1px;">niela</h2>
+          <div style="width: 32px; height: 2px; background-color: #db2777; margin: 12px auto 8px auto;"></div>
+          <h1 style="color: #0f172a; margin: 10px 0 0 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">Order Confirmed!</h1>
+          <p style="color: #64748b; font-size: 13.5px; margin-top: 6px; font-weight: 500;">Thank you for shopping with Niela. Your order has been placed successfully.</p>
         </div>
         
-        <div style="border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 16px 0; margin-bottom: 24px;">
-          <p style="margin: 0; font-size: 14px; color: #64748b;">Order ID: <strong style="color: #0f172a;">${order._id}</strong></p>
-          <p style="margin: 6px 0 0 0; font-size: 14px; color: #64748b;">Date: <strong style="color: #0f172a;">${new Date(order.createdAt).toLocaleDateString()}</strong></p>
+        <div style="border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; padding: 14px 0; margin-bottom: 24px; font-size: 13px;">
+          <p style="margin: 0; color: #64748b;">Order ID: <strong style="color: #0f172a;">#${order._id.toString().toUpperCase()}</strong></p>
+          <p style="margin: 6px 0 0 0; color: #64748b;">Date: <strong style="color: #0f172a;">${new Date(order.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}</strong></p>
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13.5px;">
           <thead>
-            <tr style="background-color: #f8fafc;">
-              <th style="padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 750;">Item</th>
-              <th style="padding: 12px; text-align: center; font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 750;">Qty</th>
-              <th style="padding: 12px; text-align: right; font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 750;">Price</th>
+            <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+              <th style="padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; color: #475569; font-weight: 700; letter-spacing: 0.5px;">Item</th>
+              <th style="padding: 10px 12px; text-align: center; font-size: 11px; text-transform: uppercase; color: #475569; font-weight: 700; letter-spacing: 0.5px;">Qty</th>
+              <th style="padding: 10px 12px; text-align: right; font-size: 11px; text-transform: uppercase; color: #475569; font-weight: 700; letter-spacing: 0.5px;">Price</th>
             </tr>
           </thead>
           <tbody>
             ${itemsListHtml}
             <tr>
-              <td colspan="2" style="padding: 16px 12px 12px 12px; font-weight: bold; color: #0f172a; text-align: right; font-size: 16px;">Total Paid:</td>
+              <td colspan="2" style="padding: 16px 12px 12px 12px; font-weight: 700; color: #0f172a; text-align: right; font-size: 14px;">Total Paid:</td>
               <td style="padding: 16px 12px 12px 12px; font-weight: 800; color: #db2777; text-align: right; font-size: 18px;">₹${order.totalAmount}</td>
             </tr>
           </tbody>
         </table>
 
-        <div style="background-color: #f8fafc; border-radius: 16px; padding: 20px; margin-bottom: 24px;">
-          <h3 style="margin: 0 0 10px 0; color: #0f172a; font-size: 14px; text-transform: uppercase; tracking-wider: 1px;">Shipping Details</h3>
-          <p style="margin: 0; font-size: 14px; color: #334155; font-weight: 600;">${order.shippingDetails.fullName}</p>
-          <p style="margin: 4px 0 0 0; font-size: 14px; color: #475569;">${order.shippingDetails.address}</p>
-          <p style="margin: 2px 0 0 0; font-size: 14px; color: #475569;">${order.shippingDetails.city} - ${order.shippingDetails.zip}</p>
-          <p style="margin: 4px 0 0 0; font-size: 14px; color: #475569;">Phone: ${order.shippingDetails.phone}</p>
+        <div style="background-color: #f8fafc; border-radius: 16px; padding: 20px; margin-bottom: 24px; border: 1px solid #f1f5f9;">
+          <h3 style="margin: 0 0 10px 0; color: #0f172a; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800;">Shipping Details</h3>
+          <p style="margin: 0; font-size: 13px; color: #334155; font-weight: 600;">${order.shippingDetails.fullName}</p>
+          <p style="margin: 4px 0 0 0; font-size: 13px; color: #475569;">${order.shippingDetails.address}</p>
+          <p style="margin: 2px 0 0 0; font-size: 13px; color: #475569;">${order.shippingDetails.city} - ${order.shippingDetails.zip}</p>
+          <p style="margin: 4px 0 0 0; font-size: 13px; color: #475569; font-weight: 500;">Phone: ${order.shippingDetails.phone}</p>
         </div>
 
-        <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">If you have any questions, please contact us at support@niela.com.</p>
+        <p style="color: #94a3b8; font-size: 11.5px; text-align: center; margin: 0; font-weight: 500;">If you have any questions, please contact us at support@niela.com.</p>
       </div>
     `;
 
     await sendEmail({
-      to: order.user?.email || email,
-      subject: `Niela - Order Confirmation #${order._id.toString().slice(-6)}`,
+      to: email,
+      subject: `Niela Care - Order Confirmed! #${order._id.toString().slice(-6).toUpperCase()}`,
       text: `Your order #${order._id} has been placed successfully. Total amount: ₹${order.totalAmount}.`,
       html,
     });

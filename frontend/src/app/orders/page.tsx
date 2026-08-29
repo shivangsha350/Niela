@@ -5,6 +5,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { FiPackage, FiChevronRight } from "react-icons/fi";
+import apiService from "@/services/api";
 
 interface OrderItem {
   name: string;
@@ -27,17 +28,32 @@ export default function OrdersHistoryPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedOrders = localStorage.getItem("niela_orders");
-      if (storedOrders) {
-        try {
-          setOrders(JSON.parse(storedOrders));
-        } catch (e) {
-          console.error(e);
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const data = await apiService.orders.getMyOrders();
+        setOrders(data);
+        setLoading(false);
+        return;
+      } catch (err) {
+        console.warn("API orders fetch failed, trying local fallback:", err);
+      }
+
+      // Fallback to localStorage
+      if (typeof window !== "undefined") {
+        const storedOrders = localStorage.getItem("niela_orders");
+        if (storedOrders) {
+          try {
+            setOrders(JSON.parse(storedOrders));
+          } catch (e) {
+            console.error(e);
+          }
         }
       }
       setLoading(false);
-    }
+    };
+
+    fetchOrders();
   }, []);
 
   return (

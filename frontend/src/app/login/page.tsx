@@ -67,20 +67,8 @@ export default function LoginPage() {
     setError("");
     try {
       const idToken = response.credential;
-      const base64Url = idToken.split(".")[1];
-      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-      const jsonPayload = decodeURIComponent(
-        window
-          .atob(base64)
-          .split("")
-          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-          .join("")
-      );
-      const payload = JSON.parse(jsonPayload);
       
-      const { name: gName, email: gEmail, sub: gId } = payload;
-      
-      const data = await apiService.auth.googleLogin(gName, gEmail, gId);
+      const data = await apiService.auth.googleLogin(undefined, undefined, undefined, idToken);
       setLoading(false);
       
       loginUser(

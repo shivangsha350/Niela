@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useShop } from "@/context/ShopContext";
+import apiService from "@/services/api";
 
 export default function AdminLoginPage() {
   const { loginUser } = useShop();
@@ -14,7 +15,7 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       setError("Please fill in all fields.");
@@ -24,20 +25,33 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError("");
 
-    setTimeout(() => {
-      setLoading(false);
-      // Log in as admin
+    try {
+      const data = await apiService.auth.login(email, password);
+      
+      if (data.role !== "admin") {
+        setError("Forbidden: You do not have administrator privileges.");
+        setLoading(false);
+        return;
+      }
+
       loginUser(
         {
-          _id: "admin-user",
-          name: "System Admin",
-          email,
-          role: "admin",
+          _id: data._id,
+          name: data.name,
+          email: data.email,
+          role: data.role,
         },
-        "mock-admin-token"
+        data.token
       );
       router.push("/admin");
-    }, 1000);
+    } catch (err: any) {
+      setLoading(false);
+      setError(
+        err.response?.data?.message ||
+        err.message ||
+        "Invalid email or password."
+      );
+    }
   };
 
   return (
