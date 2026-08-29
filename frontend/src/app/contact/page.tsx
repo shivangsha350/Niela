@@ -83,7 +83,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-brand-navy text-sm sm:text-base">Support Email</h3>
-                    <p className="text-xs sm:text-sm text-brand-slate mt-1">support@niela.com</p>
+                    <p className="text-xs sm:text-sm text-brand-slate mt-1">support@nielacare.com</p>
                     <p className="text-[10px] text-brand-slate">We respond within 24 hours.</p>
                   </div>
                 </div>
@@ -94,8 +94,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-brand-navy text-sm sm:text-base">Helpline Support</h3>
-                    <p className="text-xs sm:text-sm text-brand-slate mt-1">+91 98765 43210</p>
-                    <p className="text-[10px] text-brand-slate">Mon - Sat: 9 AM to 6 PM IST</p>
+                    <p className="text-xs sm:text-sm text-brand-slate mt-1">+91 8079037352</p>
+                    <p className="text-[10px] text-brand-slate">Mon - Sat: 9 AM to 7 PM IST</p>
                   </div>
                 </div>
 
@@ -105,8 +105,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-brand-navy text-sm sm:text-base">Corporate Office</h3>
-                    <p className="text-xs sm:text-sm text-brand-slate mt-1">Niela Wellness Pvt. Ltd.</p>
-                    <p className="text-xs text-brand-slate">Bandrakurla Complex, Bandra East, Mumbai - 400051</p>
+                    <p className="text-xs text-brand-slate"></p>Office No. 301, Third & Zero Floor, Trimurti Prime Tower,
+Niwaru Rd, Jhotwara, Jaipur, Rajasthan - 302012
                   </div>
                 </div>
               </div>
@@ -130,7 +130,7 @@ export default function ContactPage() {
                         required
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Diya Sharma"
+                        placeholder="e.g. Shubham Taksali"
                         className="w-full border border-brand-border rounded-xl px-4 py-2.5 text-sm text-brand-navy focus:outline-none focus:border-brand-pink"
                       />
                     </div>
@@ -142,7 +142,7 @@ export default function ContactPage() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="e.g. diya@gmail.com"
+                        placeholder="e.g. shubham@gmail.com"
                         className="w-full border border-brand-border rounded-xl px-4 py-2.5 text-sm text-brand-navy focus:outline-none focus:border-brand-pink"
                       />
                     </div>
