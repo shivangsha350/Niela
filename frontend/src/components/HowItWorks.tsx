@@ -27,33 +27,34 @@ const steps = [
   }
 ];
 
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.25,
+      delayChildren: 0.1
+    }
+  }
+} satisfies Variants;
+
+const lineVariants = {
+  hidden: { scaleX: 0 },
+  visible: { 
+    scaleX: 1,
+    transition: { duration: 0.8, ease: "easeInOut" as const }
+  }
+} satisfies Variants;
+
+const stepVariants = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { type: "spring" as const, stiffness: 90, damping: 14 }
+  }
+} satisfies Variants;
+
 export default function HowItWorks() {
-  const containerVariants: Variants = {
-    hidden: {},
-    visible: {
-      transition: {
-        staggerChildren: 0.25,
-        delayChildren: 0.1
-      }
-    }
-  };
-
-  const lineVariants: Variants = {
-    hidden: { scaleX: 0 },
-    visible: { 
-      scaleX: 1,
-      transition: { duration: 0.8, ease: "easeInOut" as const }
-    }
-  };
-
-  const stepVariants: Variants = {
-    hidden: { opacity: 0, y: 40 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { type: "spring" as const, stiffness: 90, damping: 14 }
-    }
-  };
 
   return (
     <section className="w-full py-16 sm:py-24 bg-white border-b border-brand-border/60 overflow-hidden">

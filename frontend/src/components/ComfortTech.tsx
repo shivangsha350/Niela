@@ -3,6 +3,26 @@
 import React, { useState } from "react";
 import { motion, type Variants } from "framer-motion";
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.1
+    }
+  }
+} satisfies Variants;
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { type: "spring" as const, stiffness: 100, damping: 15 }
+  }
+} satisfies Variants;
+
 const techLayers = [
   {
     number: "01",
@@ -28,26 +48,6 @@ const techLayers = [
 
 export default function ComfortTech() {
   const [activeLayer, setActiveLayer] = useState<number | null>(0);
-
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.15,
-        delayChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { type: "spring" as const, stiffness: 100, damping: 15 }
-    }
-  };
 
   const layerStyles = {
     "01": {
