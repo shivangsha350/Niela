@@ -1,4 +1,3 @@
-import React from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { 
@@ -10,6 +9,10 @@ import {
   FiTruck, 
   FiRefreshCw 
 } from "react-icons/fi";
+
+export const metadata = {
+  title: "Terms of Use | Niela",
+};
 
 export default function TermsPage() {
   return (

@@ -1,4 +1,3 @@
-import React from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import {
@@ -17,6 +16,10 @@ import {
   FiLock,
   FiPhoneCall
 } from "react-icons/fi";
+
+export const metadata = {
+  title: "Privacy Policy | Niela",
+};
 
 export default function PrivacyPage() {
   return (
