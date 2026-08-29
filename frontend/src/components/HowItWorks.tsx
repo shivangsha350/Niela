@@ -42,7 +42,7 @@ export default function HowItWorks() {
     hidden: { scaleX: 0 },
     visible: { 
       scaleX: 1,
-      transition: { duration: 0.8, ease: "easeInOut" }
+      transition: { duration: 0.8, ease: "easeInOut" as const }
     }
   };
 
@@ -51,7 +51,7 @@ export default function HowItWorks() {
     visible: { 
       opacity: 1, 
       y: 0,
-      transition: { type: "spring", stiffness: 90, damping: 14 }
+      transition: { type: "spring" as const, stiffness: 90, damping: 14 }
     }
   };
 
