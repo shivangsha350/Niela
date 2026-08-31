@@ -9,6 +9,7 @@ import HowItWorks from "@/components/HowItWorks";
 import Testimonials from "@/components/Testimonials";
 import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
+import Creative from "@/components/Creative";
 
 export default function HomePage() {
   return (
@@ -32,7 +33,10 @@ export default function HomePage() {
         
         {/* 4-Step ordering timeline */}
         <HowItWorks />
-        
+      
+        {/* Creative section  */}
+        <Creative />
+
         {/* Review blocks carousel */}
         <Testimonials />
         
