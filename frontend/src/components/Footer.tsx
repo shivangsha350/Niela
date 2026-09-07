@@ -67,10 +67,12 @@ export default function Footer() {
 
             {/* Support & Legal */}
             <div className="space-y-4 col-span-2 sm:col-span-1">
-              <h4 className="font-bold text-sm tracking-wide text-white uppercase">Legal</h4>
+              <h4 className="font-bold text-sm tracking-wide text-white uppercase">Legal & Policies</h4>
               <ul className="space-y-2 text-sm text-slate-400">
                 <li><Link href="/privacy" className="hover:text-brand-pink transition">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="hover:text-brand-pink transition">Terms & Conditions</Link></li>
+                <li><Link href="/shipping-policy" className="hover:text-brand-pink transition">Shipping Policy</Link></li>
+                <li><Link href="/cancellation-and-refund" className="hover:text-brand-pink transition">Cancellation & Refunds</Link></li>
               </ul>
             </div>
 
@@ -79,11 +81,14 @@ export default function Footer() {
         </div>
 
         {/* Bottom footer bar */}
-        <div className="pt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-4">
-          <p>© {currentYear} Niela E-Commerce. All rights reserved.</p>
-          <div className="flex space-x-6">
+        <div className="pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500 gap-4">
+          <p>© {currentYear} Poiya Healthcare India Pvt. Ltd. (Niela). All rights reserved.</p>
+          <div className="flex flex-wrap justify-center gap-x-5 gap-y-2">
             <Link href="/privacy" className="hover:text-brand-pink transition">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-brand-pink transition">Terms of Service</Link>
+            <Link href="/terms" className="hover:text-brand-pink transition">Terms of Use</Link>
+            <Link href="/shipping-policy" className="hover:text-brand-pink transition">Shipping Policy</Link>
+            <Link href="/cancellation-and-refund" className="hover:text-brand-pink transition">Refunds & Cancellation</Link>
+            <Link href="/contact" className="hover:text-brand-pink transition">Contact Us</Link>
           </div>
         </div>
 

@@ -2,10 +2,37 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useShop } from "@/context/ShopContext";
 import apiService from "@/services/api";
+
+// Helper to reliably load Razorpay checkout script
+const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") {
+      resolve(false);
+      return;
+    }
+    if ((window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existingScript) {
+      existingScript.addEventListener("load", () => resolve(true));
+      existingScript.addEventListener("error", () => resolve(false));
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 export default function CheckoutPage() {
   const { cart, cartSubtotal, clearCart, user } = useShop();
@@ -22,19 +49,9 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
 
-  // Load Razorpay Script dynamically on mount
+  // Pre-load Razorpay Script on mount
   useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    document.body.appendChild(script);
-    return () => {
-      try {
-        document.body.removeChild(script);
-      } catch (e) {
-        // Ignored
-      }
-    };
+    loadRazorpayScript();
   }, []);
 
   // Redirect if cart is empty
@@ -65,7 +82,15 @@ export default function CheckoutPage() {
     setError("");
 
     try {
-      // 1. Create order in MongoDB backend (initial state)
+      // 1. Ensure Razorpay checkout script is loaded
+      const isScriptLoaded = await loadRazorpayScript();
+      if (!isScriptLoaded) {
+        setError("Unable to load Razorpay payment gateway. Please check your internet connection.");
+        setIsProcessing(false);
+        return;
+      }
+
+      // 2. Create order in MongoDB backend (initial status: Pending)
       const orderPayload = {
         items: cart.map(item => ({
           name: item.product.name,
@@ -87,106 +112,84 @@ export default function CheckoutPage() {
 
       const backendOrder = await apiService.orders.create(orderPayload);
 
-      // 2. Generate Razorpay ticket
+      // 3. Generate Razorpay ticket
       const paymentTicket = await apiService.payments.createOrder(grandTotal);
 
-      // 3. Handle payment (Simulated vs Real)
-      if (paymentTicket.simulated) {
-        // If simulation mode is active (because keys are not set)
-        // Automatically verify payment on backend
-        const verifyResponse = await apiService.payments.verifySignature({
-          orderId: backendOrder._id,
-          razorpay_order_id: paymentTicket.id,
-          razorpay_payment_id: "sim_pay_" + Math.floor(100000 + Math.random() * 900000),
-          razorpay_signature: "simulated_signature"
-        });
-
-        if (verifyResponse.success) {
-          // Sync with frontend LocalStorage orders
-          const finalOrder = {
-            ...backendOrder,
-            paymentStatus: "Paid",
-            paymentId: "sim_pay_12345",
-            createdAt: new Date().toISOString()
-          };
-
-          if (typeof window !== "undefined") {
-            const storedOrders = localStorage.getItem("niela_orders");
-            const ordersList = storedOrders ? JSON.parse(storedOrders) : [];
-            ordersList.unshift(finalOrder);
-            localStorage.setItem("niela_orders", JSON.stringify(ordersList));
-          }
-
-          clearCart();
-          setIsProcessing(false);
-          router.push(`/orders/${backendOrder._id}`);
-        } else {
-          throw new Error("Simulated payment verification failed");
-        }
-      } else {
-        // Real Razorpay Checkout flow
-        const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_mock",
-          amount: paymentTicket.amount,
-          currency: paymentTicket.currency,
-          name: "Niela Care",
-          description: "Organic Period Care Purchase",
-          order_id: paymentTicket.id,
-          handler: async function (response: any) {
-            try {
-              const verifyResponse = await apiService.payments.verifySignature({
-                orderId: backendOrder._id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature
-              });
-
-              if (verifyResponse.success) {
-                const finalOrder = {
-                  ...backendOrder,
-                  paymentStatus: "Paid",
-                  paymentId: response.razorpay_payment_id,
-                  createdAt: new Date().toISOString()
-                };
-
-                if (typeof window !== "undefined") {
-                  const storedOrders = localStorage.getItem("niela_orders");
-                  const ordersList = storedOrders ? JSON.parse(storedOrders) : [];
-                  ordersList.unshift(finalOrder);
-                  localStorage.setItem("niela_orders", JSON.stringify(ordersList));
-                }
-
-                clearCart();
-                setIsProcessing(false);
-                router.push(`/orders/${backendOrder._id}`);
-              } else {
-                setError("Payment signature verification failed. Please contact support.");
-                setIsProcessing(false);
-              }
-            } catch (verifyErr: any) {
-              setError(verifyErr.message || "Payment verification failed. Please try again.");
-              setIsProcessing(false);
-            }
-          },
-          prefill: {
-            name: fullName,
-            email: email,
-            contact: phone
-          },
-          theme: {
-            color: "#db2777"
-          },
-          modal: {
-            ondismiss: function () {
-              setError("Payment cancelled by user.");
-              setIsProcessing(false);
-            }
-          }
-        };
-
-        const rzp = new (window as any).Razorpay(options);
-        rzp.open();
+      const rzpKey = paymentTicket.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      if (!rzpKey) {
+        throw new Error("Razorpay Key ID is not configured. Please add RAZORPAY_KEY_ID in backend/.env.");
       }
+
+      // 4. Open Razorpay Checkout modal (UPI QR, GPay, PhonePe, Cards, Netbanking)
+      const options = {
+        key: rzpKey,
+        amount: paymentTicket.amount,
+        currency: paymentTicket.currency || "INR",
+        name: "niela",
+        description: `Order #${backendOrder._id ? backendOrder._id.slice(-6).toUpperCase() : ""}`,
+        order_id: paymentTicket.id,
+        handler: async function (response: any) {
+          try {
+            const verifyResponse = await apiService.payments.verifySignature({
+              orderId: backendOrder._id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            });
+
+            if (verifyResponse.success) {
+              const finalOrder = {
+                ...backendOrder,
+                paymentStatus: "Paid",
+                paymentId: response.razorpay_payment_id,
+                createdAt: new Date().toISOString()
+              };
+
+              if (typeof window !== "undefined") {
+                const storedOrders = localStorage.getItem("niela_orders");
+                const ordersList = storedOrders ? JSON.parse(storedOrders) : [];
+                ordersList.unshift(finalOrder);
+                localStorage.setItem("niela_orders", JSON.stringify(ordersList));
+              }
+
+              clearCart();
+              setIsProcessing(false);
+              router.push(`/orders/${backendOrder._id}`);
+            } else {
+              setError("Payment verification failed. Please contact customer support.");
+              setIsProcessing(false);
+            }
+          } catch (verifyErr: any) {
+            setError(verifyErr.response?.data?.message || verifyErr.message || "Payment verification failed.");
+            setIsProcessing(false);
+          }
+        },
+        prefill: {
+          name: fullName,
+          email: email,
+          contact: phone
+        },
+        notes: {
+          order_id: backendOrder._id,
+          address: `${address}, ${city} - ${zip}`
+        },
+        theme: {
+          color: "#db2777"
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessing(false);
+            setError("Payment cancelled. You can retry payment whenever you're ready.");
+          }
+        }
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on("payment.failed", function (resp: any) {
+        setIsProcessing(false);
+        setError(resp.error?.description || "Payment failed. Please try another payment method or UPI app.");
+      });
+      rzp.open();
     } catch (err: any) {
       setIsProcessing(false);
       setError(
@@ -369,7 +372,7 @@ export default function CheckoutPage() {
                   <span className="font-bold text-xl">₹{grandTotal}</span>
                 </div>
 
-                <div className="pt-4">
+                <div className="pt-4 space-y-3">
                   <button
                     type="submit"
                     disabled={isProcessing}
@@ -377,6 +380,21 @@ export default function CheckoutPage() {
                   >
                     {isProcessing ? "Processing Order..." : paymentMethod === "cod" ? "Place Order (COD)" : "Pay with Razorpay"}
                   </button>
+                  <p className="text-[11px] text-center text-brand-slate leading-tight">
+                    By placing your order, you agree to Niela&apos;s{" "}
+                    <Link href="/terms" target="_blank" className="text-brand-pink underline hover:text-brand-navy">
+                      Terms of Use
+                    </Link>
+                    ,{" "}
+                    <Link href="/privacy" target="_blank" className="text-brand-pink underline hover:text-brand-navy">
+                      Privacy Policy
+                    </Link>
+                    , &{" "}
+                    <Link href="/cancellation-and-refund" target="_blank" className="text-brand-pink underline hover:text-brand-navy">
+                      Refund Policy
+                    </Link>
+                    .
+                  </p>
                 </div>
               </div>
             </div>
