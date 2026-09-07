@@ -1,5 +1,6 @@
 import express from "express";
 import crypto from "crypto";
+import dotenv from "dotenv";
 import Razorpay from "razorpay";
 import Order from "../models/Order.js";
 import { protect, admin } from "../middleware/auth.js";
@@ -7,18 +8,16 @@ import sendEmail from "../utils/mailer.js";
 
 const router = express.Router();
 
-// Initialize Razorpay SDK
-let razorpay;
-try {
-  if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
-    razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
-    });
+// Helper to get active Razorpay SDK instance
+const getRazorpayInstance = () => {
+  dotenv.config();
+  const key_id = process.env.RAZORPAY_KEY_ID;
+  const key_secret = process.env.RAZORPAY_KEY_SECRET;
+  if (!key_id || !key_secret) {
+    return null;
   }
-} catch (e) {
-  console.warn("Could not initialize Razorpay SDK. Operating in simulation mode.", e);
-}
+  return new Razorpay({ key_id, key_secret });
+};
 
 // Helper to send order confirmation email
 const sendOrderConfirmationEmail = async (orderId) => {
@@ -168,31 +167,31 @@ router.get("/orders/:id", protect, async (req, res) => {
 router.post("/payments/create", protect, async (req, res) => {
   const { amount } = req.body;
   try {
-    const options = {
-      amount: Math.round(amount * 100), // amount in paisa (e.g. 500 INR = 50000 paisa)
-      currency: "INR",
-      receipt: `receipt_${Math.floor(100000 + Math.random() * 900000)}`,
-    };
+    const razorpay = getRazorpayInstance();
+    const key_id = process.env.RAZORPAY_KEY_ID;
 
-    if (razorpay) {
-      const rpOrder = await razorpay.orders.create(options);
-      res.json({
-        id: rpOrder.id,
-        amount: rpOrder.amount,
-        currency: rpOrder.currency,
-        simulated: false
-      });
-    } else {
-      // Simulation mode if key is not configured
-      res.json({
-        id: `rp_sim_${Math.floor(100000 + Math.random() * 900000)}`,
-        amount: options.amount,
-        currency: "INR",
-        simulated: true
+    if (!razorpay || !key_id) {
+      return res.status(400).json({
+        message: "Razorpay keys are not configured. Please add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend/.env",
       });
     }
+
+    const options = {
+      amount: Math.round(amount * 100), // amount in paise (e.g. ₹500 = 50000 paise)
+      currency: "INR",
+      receipt: `rcpt_${Date.now().toString().slice(-8)}_${Math.floor(100 + Math.random() * 900)}`,
+    };
+
+    const rpOrder = await razorpay.orders.create(options);
+    res.json({
+      id: rpOrder.id,
+      amount: rpOrder.amount,
+      currency: rpOrder.currency,
+      keyId: key_id,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Razorpay create order error:", error);
+    res.status(500).json({ message: error.message || "Failed to create Razorpay order" });
   }
 });
 
@@ -206,19 +205,14 @@ router.post("/payments/verify", protect, async (req, res) => {
       return res.status(404).json({ message: "Associated order not found" });
     }
 
-    if (razorpay_order_id && razorpay_order_id.startsWith("rp_sim_")) {
-      // Pass simulated payments immediately
-      order.paymentStatus = "Paid";
-      order.paymentId = razorpay_payment_id || "sim_pay_12345";
-      await order.save();
-      // Send confirmation email
-      await sendOrderConfirmationEmail(order._id);
-      return res.json({ success: true, message: "Payment verified in simulation mode" });
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    if (!secret) {
+      return res.status(500).json({ message: "Razorpay Key Secret is not configured on server" });
     }
 
     const text = `${razorpay_order_id}|${razorpay_payment_id}`;
     const generated_signature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || "mock_key_secret")
+      .createHmac("sha256", secret)
       .update(text)
       .digest("hex");
 
@@ -233,7 +227,8 @@ router.post("/payments/verify", protect, async (req, res) => {
       res.status(400).json({ success: false, message: "Invalid payment signature verification failed" });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Razorpay verification error:", error);
+    res.status(500).json({ message: error.message || "Payment verification failed" });
   }
 });
 
