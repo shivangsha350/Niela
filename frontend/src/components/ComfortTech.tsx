@@ -41,9 +41,9 @@ const techLayers = [
   },
   {
     number: "02",
-    name: "Ultra-Absorbent Core",
+    name: "Certified Ultra-Absorbent Core",
     description:
-      "Packed with biodegradable natural wood pulp from FSC-certified forests. Instantly locks in moisture and keeps you dry all day long without bulky swelling.",
+      " Made with a biodegradable absorbent core under ISO 9001 and GMP-certified manufacturing — built to keep you dry and comfortable, without compromise.",
   },
   {
     number: "03",
@@ -125,7 +125,7 @@ export default function ComfortTech() {
 
               <div className="pt-2 flex flex-wrap gap-2">
                 <span className="px-3 py-1 bg-brand-bg rounded-lg border border-brand-border/40 text-[10px] sm:text-xs font-semibold text-brand-navy shadow-sm">
-                  GOTS Organic
+                  ISO 9001 Certified
                 </span>
 
                 <span className="px-3 py-1 bg-brand-bg rounded-lg border border-brand-border/40 text-[10px] sm:text-xs font-semibold text-brand-navy shadow-sm">
@@ -133,8 +133,7 @@ export default function ComfortTech() {
                 </span>
 
                 <span className="px-3 py-1 bg-brand-bg rounded-lg border border-brand-border/40 text-[10px] sm:text-xs font-semibold text-brand-navy shadow-sm">
-                  FSC Wood Pulp
-                </span>
+                 BIS Certified                </span>
               </div>
             </motion.div>
 

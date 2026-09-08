@@ -10,15 +10,18 @@ import Testimonials from "@/components/Testimonials";
 import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
 import Creative from "@/components/Creative";
+import FaqBot from "@/components/FaqBot";
 
 export default function HomePage() {
   return (
     <>
       <Header />
+              <FaqBot />
+
       <main className="flex-grow">
         {/* Animated Slide Hero section */}
         <Hero />
-        
+
         {/* Core Value Props Row */}
         <TrustBar />
         
