@@ -105,7 +105,7 @@ export default function ShippingPolicyPage() {
                     </tr>
                     <tr>
                       <td className="p-3.5 font-medium text-brand-navy">Below ₹499</td>
-                      <td className="p-3.5 text-brand-navy font-semibold">₹99 Flat Rate</td>
+                      <td className="p-3.5 text-brand-navy font-semibold">₹49 Flat Rate</td>
                       <td className="p-3.5">3 – 7 Business Days</td>
                     </tr>
                   </tbody>

@@ -278,7 +278,7 @@ export default function LoginPage() {
 
             <div className="text-xs text-brand-slate text-center border-t border-brand-border/40 pt-4">
               <p>Don&apos;t have an account? <Link href="/register" className="text-brand-pink font-bold hover:underline">Sign up</Link></p>
-              <p className="mt-2 text-[10px] italic">Tip: Use email <strong className="text-brand-gold">admin@niela.com</strong> to login as administrator.</p>
+              <p className="mt-2 text-[10px] italic">Tip: Use email <strong className="text-brand-gold">admin@nielacare.com</strong> to login as administrator.</p>
             </div>
 
           </div>

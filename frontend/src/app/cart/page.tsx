@@ -32,7 +32,7 @@ export default function CartPage() {
   };
 
   const discountAmount = Math.round(cartSubtotal * (discountPercent / 100));
-  const shippingFee = cartSubtotal >= 499 || cartSubtotal === 0 ? 0 : 99;
+  const shippingFee = cartSubtotal >= 499 || cartSubtotal === 0 ? 0 : 49;
   const grandTotal = cartSubtotal - discountAmount + shippingFee;
 
   return (
