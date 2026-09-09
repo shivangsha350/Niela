@@ -98,8 +98,8 @@ router.post("/register", async (req, res) => {
     // Delete OTP record after successful validation
     await Otp.deleteOne({ email });
 
-    // Set role to admin if the email is admin@niela.com
-    const role = email.toLowerCase() === "admin@niela.com" ? "admin" : "user";
+    // Set role to admin if the email is admin@nielacare.com or admin@niela.com
+    const role = (email.toLowerCase() === "admin@nielacare.com" || email.toLowerCase() === "admin@niela.com") ? "admin" : "user";
 
     const user = await User.create({ name, email, password, role });
     if (user) {
@@ -202,7 +202,7 @@ router.post("/google-login", async (req, res) => {
         await user.save();
       } else {
         // 3. Create a new user if they don't exist
-        const role = gEmail.toLowerCase() === "admin@niela.com" ? "admin" : "user";
+        const role = (gEmail.toLowerCase() === "admin@nielacare.com" || gEmail.toLowerCase() === "admin@niela.com") ? "admin" : "user";
         user = new User({
           name: gName,
           email: gEmail.toLowerCase(),

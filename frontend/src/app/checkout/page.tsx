@@ -62,7 +62,7 @@ export default function CheckoutPage() {
   }, [cart, router, isProcessing]);
 
   const discountAmount = 0; // standard coupon check is in cart page, checkout matches final
-  const shippingFee = cartSubtotal >= 499 ? 0 : 99;
+  const shippingFee = cartSubtotal >= 499 ? 0 : 49;
   const grandTotal = cartSubtotal + shippingFee;
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
