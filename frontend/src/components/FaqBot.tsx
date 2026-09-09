@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, FormEvent } from "react";
+import Image from "next/image";
 
 type Message = { from: "bot" | "user"; text: string };
 
@@ -11,7 +12,7 @@ type Faq = {
 };
 
 const FAQS: Faq[] = [
-      {
+  {
     keywords: ["certified", "certificate", "certification", "quality", "standard"],
     question: "Are your products certified?",
     answer: "Yes — our manufacturing partner holds ISO 9001:2015, BIS (IS 5405:2019), and GMP certifications, plus batch-wise Certificates of Analysis for every product.",
@@ -41,8 +42,8 @@ const FAQS: Faq[] = [
     question: "Are your products made in India?",
     answer: "Yes — 100% Made in India. All raw materials are sourced from Indian suppliers with zero overseas components.",
   },
-      {
-    keywords: ["shipping", "delivery", "days", "arrive", "international"],
+  {
+    keywords: ["shipping", "delivery", "days", "arrive", "international", "deliver"],
     question: "How long does delivery take?",
     answer: "Domestic orders are processed within 1 business day and delivered in 3–7 business days. Remote areas may take 10–12 working days. We also ship internationally.",
   },
@@ -67,12 +68,12 @@ const FAQS: Faq[] = [
     answer: "We collect only what's needed to process orders and improve your experience — your info is never sold, and payment details aren't stored after a transaction.",
   },
   {
-    keywords: ["contact", "email", "phone", "support", "reach", "help"],
+    keywords: ["contact", "email", "phone", "support", "reach", "help", "human", "agent", "talk"],
     question: "How do I contact Niela?",
     answer: "Email us at support@nielacare.com or call +91 80790 37352.",
   },
   {
-    keywords: ["company", "who", "owner", "poiya", "about"],
+    keywords: ["company", "who", "owner", "poiya", "about", "niela", "brand"],
     question: "Who owns/runs Niela?",
     answer: "Niela is owned and operated by Poiya Healthcare India Private Limited, a company registered under the Indian Companies Act, 2013.",
   },
@@ -82,7 +83,7 @@ const FAQS: Faq[] = [
     answer: "Yes — free shipping on all orders above ₹499.",
   },
   {
-    keywords: ["biodegradable", "plastic", "eco friendly", "sustainable"],
+    keywords: ["biodegradable", "plastic", "eco friendly", "sustainable", "eco"],
     question: "Are your products eco-friendly?",
     answer: "Yes — Niela products are 100% biodegradable and plastic-free.",
   },
@@ -90,16 +91,6 @@ const FAQS: Faq[] = [
     keywords: ["complaint", "issue", "problem", "order issue"],
     question: "What if there's an issue with my order?",
     answer: "Write to support@nielacare.com within 7 business days of delivery and our team will help resolve it.",
-  },
-  {
-    keywords: ["shipping", "delivery", "deliver", "arrive", "days"],
-    question: "How long does shipping take?",
-    answer: "Orders ship within 24 hours and arrive in 2–5 business days across India.",
-  },
-    {
-    keywords: ["company", "about", "who", "niela", "brand"],
-    question: "What is Niela?",
-    answer: "Niela is a period and personal care brand under Poiya Healthcare, focused on organic, skin-safe products for everyday comfort.",
   },
   {
     keywords: ["product", "products", "sell", "offer", "range", "catalog"],
@@ -127,11 +118,6 @@ const FAQS: Faq[] = [
     answer: "Yes — we manufacture hygienic, absorbent hospital bedsheets for medical use.",
   },
   {
-    keywords: ["return", "refund", "exchange"],
-    question: "What's your return policy?",
-    answer: "Unopened packs can be returned within 7 days of delivery for a full refund. Opened packs aren't eligible for hygiene reasons.",
-  },
-  {
     keywords: ["size", "sizes", "length", "fit"],
     question: "What pad sizes do you offer?",
     answer: "We offer Regular (240mm), Heavy Flow (280mm), and Overnight (320mm) — all with wings.",
@@ -152,24 +138,14 @@ const FAQS: Faq[] = [
     answer: "Yes — subscribe on any product page for monthly delivery and a discount on every order.",
   },
   {
-    keywords: ["dispose", "disposal", "throw", "biodegradable", "eco"],
+    keywords: ["dispose", "disposal", "throw"],
     question: "How do I dispose of the pads?",
     answer: "Wrap the used pad in the disposal sheet provided and dispose of it in a bin — never flush it.",
-  },
-  {
-    keywords: ["payment", "cod", "cash", "pay"],
-    question: "What payment methods do you accept?",
-    answer: "We accept UPI, cards, net banking, and Cash on Delivery.",
-  },
-  {
-    keywords: ["contact", "support", "help", "human", "agent", "talk"],
-    question: "How do I reach a real person?",
-    answer: "Email us at support@niela.in or use the Contact page — we usually reply within a few hours.",
   },
 ];
 
 const FALLBACK =
-  "I'm not sure about that one — try asking about shipping, returns, sizes, materials, or payment. Or email support@niela.in.";
+  "I'm not sure about that one — try asking about shipping, returns, sizes, materials, or payment. Or email support@nielacare.com.";
 
 function findAnswer(input: string): string {
   const text = input.toLowerCase();
@@ -217,10 +193,13 @@ export default function FaqBot() {
     <div className="fixed bottom-6 right-6 z-50 font-sans">
       {open && (
         <div className="mb-3 flex h-96 w-80 flex-col overflow-hidden rounded-2xl border border-black/10 bg-white shadow-2xl">
-          <div className="flex items-center justify-between bg-[#1a1a1a] px-4 py-3">
-            <span className="text-sm font-medium tracking-wide text-white">
-              Niela Assistant
-            </span>
+          <div className="flex items-center justify-between bg-[#111a2e] px-4 py-3">
+            <div className="flex items-center gap-2">
+              <Image src="/images/niela-assistant.png" alt="" width={28} height={28} />
+              <span className="text-sm font-medium tracking-wide text-white">
+                Niela Assistant
+              </span>
+            </div>
             <button
               onClick={() => setOpen(false)}
               className="text-white/60 hover:text-white"
@@ -269,10 +248,14 @@ export default function FaqBot() {
 
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-[#1a1a1a] text-white shadow-lg hover:bg-black transition-colors"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-lg hover:scale-105 transition-transform overflow-hidden"
         aria-label="Open FAQ chat"
       >
-        {open ? "✕" : "💬"}
+        {open ? (
+          <span className="text-xl text-[#1a1a1a]">✕</span>
+        ) : (
+          <Image src="/images/niela-assistant.png" alt="Niela Assistant" width={56} height={56} />
+        )}
       </button>
     </div>
   );
