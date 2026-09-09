@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { FiCheckCircle, FiPackage, FiTruck, FiSmile } from "react-icons/fi";
+import { FiCheckCircle, FiPackage, FiTruck, FiSmile, FiDownload } from "react-icons/fi";
 import apiService from "@/services/api";
 
 interface OrderItem {
@@ -35,6 +35,20 @@ interface OrderDetails {
 export default function OrderTrackingClient({ orderId }: { orderId: string }) {
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadInvoice = async () => {
+    if (!order) return;
+    try {
+      setDownloading(true);
+      await apiService.orders.downloadInvoice(order._id);
+    } catch (err) {
+      console.error("Failed to download invoice:", err);
+      alert("Failed to generate/download invoice PDF. Please try again or contact support.");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -121,6 +135,17 @@ export default function OrderTrackingClient({ orderId }: { orderId: string }) {
             <p className="text-xs sm:text-sm text-brand-slate">
               Thank you for shopping with Niela. Your order <span className="font-bold text-brand-navy">#{order._id}</span> has been confirmed.
             </p>
+            <div className="pt-2">
+              <button
+                onClick={handleDownloadInvoice}
+                disabled={downloading}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100/60 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition disabled:opacity-50 cursor-pointer"
+                title="Download your official branded invoice as a PDF"
+              >
+                <FiDownload className="w-4 h-4 text-emerald-600" />
+                {downloading ? "Generating PDF Invoice..." : "Download Invoice (PDF)"}
+              </button>
+            </div>
           </div>
 
           {/* Tracking progress bar */}

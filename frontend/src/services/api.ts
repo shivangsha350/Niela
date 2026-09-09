@@ -1,6 +1,12 @@
 import axios from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const getBaseUrl = (): string => {
+  const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  const trimmed = rawUrl.trim().replace(/\/+$/, "");
+  return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+};
+
+const API_BASE_URL = getBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -82,6 +88,24 @@ export const apiService = {
       const response = await api.get(`/orders/${id}`);
       return response.data;
     },
+    downloadInvoice: async (id: string) => {
+      const response = await api.get(`/orders/${id}/invoice`, {
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `Invoice_Order_${id.slice(-6).toUpperCase()}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    },
+    getInvoiceUrl: (id: string) => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("niela_token") : "";
+      return `${API_BASE_URL}/orders/${id}/invoice?token=${token}`;
+    },
   },
 
   // Payments (Razorpay)
@@ -136,6 +160,20 @@ export const apiService = {
     updateOrderStatus: async (id: string, orderStatus: string) => {
       const response = await api.put(`/admin/orders/${id}`, { orderStatus });
       return response.data;
+    },
+    downloadInvoice: async (id: string) => {
+      const response = await api.get(`/orders/${id}/invoice`, {
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `Invoice_Order_${id.slice(-6).toUpperCase()}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
     },
     // Customer Enquiries
     getAllEnquiries: async () => {

@@ -70,7 +70,7 @@ const getAccessToken = async () => {
  * Sends email using Nodemailer.
  * Automatically selects between Microsoft 365 OAuth 2.0 or SMTP Password fallback.
  */
-const sendEmail = async ({ to, subject, text, html }) => {
+const sendEmail = async ({ to, subject, text, html, attachments }) => {
   const useOAuth = !!(process.env.SMTP_CLIENT_ID && process.env.SMTP_CLIENT_SECRET && process.env.SMTP_TENANT_ID);
 
   let transporter;
@@ -113,6 +113,7 @@ const sendEmail = async ({ to, subject, text, html }) => {
       subject,
       text,
       html,
+      ...(attachments && attachments.length > 0 ? { attachments } : {}),
     };
 
     try {
@@ -127,6 +128,7 @@ const sendEmail = async ({ to, subject, text, html }) => {
     console.log(`\n--------------------------------------------------`);
     console.log(`[SMTP Simulator] Mail would be sent to: ${to}`);
     console.log(`Subject: ${subject}`);
+    console.log(`Attachments: ${attachments?.length || 0} file(s)`);
     console.log(`Content: ${text}`);
     console.log(`--------------------------------------------------\n`);
     return { messageId: "simulated-id" };

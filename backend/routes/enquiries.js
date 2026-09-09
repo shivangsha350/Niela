@@ -37,7 +37,7 @@ router.get("/admin/enquiries", protect, admin, async (req, res) => {
 // @route   PUT /api/admin/enquiries/:id
 // @desc    Update enquiry status (Pending/Resolved)
 // @access  Private/Admin
-router.put("/api/admin/enquiries/:id", protect, admin, async (req, res) => {
+router.put("/admin/enquiries/:id", protect, admin, async (req, res) => {
   const { status } = req.body;
   try {
     const enquiry = await Enquiry.findById(req.params.id);

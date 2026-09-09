@@ -3,21 +3,22 @@ import User from "../models/User.js";
 
 export const protect = async (req, res, next) => {
   try {
+    let token = null;
     const authHeader = req.headers.authorization;
 
-    // Authorization header check
-    if (!authHeader) {
-      return res.status(401).json({
-        message: "Not authorized, no token provided",
-      });
+    if (authHeader) {
+      const [scheme, t] = authHeader.trim().split(/\s+/);
+      if (scheme?.toLowerCase() === "bearer") {
+        token = t;
+      }
+    } else if (req.query && req.query.token) {
+      token = req.query.token;
     }
 
-    // Expected: Bearer <token>
-    const [scheme, token] = authHeader.trim().split(/\s+/);
-
-    if (scheme?.toLowerCase() !== "bearer" || !token) {
+    // Authorization check
+    if (!token) {
       return res.status(401).json({
-        message: "Not authorized, invalid authorization header",
+        message: "Not authorized, no token provided",
       });
     }
 
