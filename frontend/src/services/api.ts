@@ -89,18 +89,31 @@ export const apiService = {
       return response.data;
     },
     downloadInvoice: async (id: string) => {
-      const response = await api.get(`/orders/${id}/invoice`, {
-        responseType: "blob",
-      });
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `Invoice_Order_${id.slice(-6).toUpperCase()}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      try {
+        const response = await api.get(`/orders/${id}/invoice`, {
+          responseType: "blob",
+        });
+        const blob = new Blob([response.data], { type: "application/pdf" });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `Invoice_Order_${id.slice(-6).toUpperCase()}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      } catch (err: any) {
+        if (err.response && err.response.data instanceof Blob) {
+          try {
+            const text = await err.response.data.text();
+            const errJson = JSON.parse(text);
+            throw new Error(errJson.message || "Failed to download invoice");
+          } catch (e: any) {
+            if (e.message) throw e;
+          }
+        }
+        throw err;
+      }
     },
     getInvoiceUrl: (id: string) => {
       const token = typeof window !== "undefined" ? localStorage.getItem("niela_token") : "";
@@ -162,18 +175,31 @@ export const apiService = {
       return response.data;
     },
     downloadInvoice: async (id: string) => {
-      const response = await api.get(`/orders/${id}/invoice`, {
-        responseType: "blob",
-      });
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `Invoice_Order_${id.slice(-6).toUpperCase()}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      try {
+        const response = await api.get(`/orders/${id}/invoice`, {
+          responseType: "blob",
+        });
+        const blob = new Blob([response.data], { type: "application/pdf" });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `Invoice_Order_${id.slice(-6).toUpperCase()}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      } catch (err: any) {
+        if (err.response && err.response.data instanceof Blob) {
+          try {
+            const text = await err.response.data.text();
+            const errJson = JSON.parse(text);
+            throw new Error(errJson.message || "Failed to download invoice");
+          } catch (e: any) {
+            if (e.message) throw e;
+          }
+        }
+        throw err;
+      }
     },
     // Customer Enquiries
     getAllEnquiries: async () => {

@@ -73,8 +73,13 @@ export default function AdminOrdersManagerPage() {
       setDownloadingId(orderId);
       await apiService.admin.downloadInvoice(orderId);
     } catch (err: any) {
-      console.error("Failed to download invoice:", err);
-      alert("Failed to generate/download invoice PDF. Please check server logs.");
+      console.error("Failed to download invoice via blob:", err);
+      try {
+        const url = apiService.orders.getInvoiceUrl(orderId);
+        window.open(url, "_blank");
+      } catch {
+        alert(err.message || "Failed to generate/download invoice PDF. Please check server logs.");
+      }
     } finally {
       setDownloadingId(null);
     }

@@ -2,6 +2,7 @@ import express from "express";
 import crypto from "crypto";
 import dotenv from "dotenv";
 import Razorpay from "razorpay";
+import User from "../models/User.js";
 import Order from "../models/Order.js";
 import { protect, admin } from "../middleware/auth.js";
 import sendEmail from "../utils/mailer.js";
@@ -358,7 +359,8 @@ router.get("/orders/:id", protect, async (req, res) => {
     }
 
     // Security check: ensure order belongs to requesting user or user is an admin
-    if (order.user.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+    const orderUserId = order.user ? order.user.toString() : null;
+    if (req.user.role !== "admin" && orderUserId && orderUserId !== req.user._id.toString()) {
       return res.status(403).json({ message: "Not authorized to view this order details" });
     }
 
@@ -491,8 +493,14 @@ router.get("/orders/:id/invoice", protect, async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    // Security: Only order owner or admin can download invoice
-    if (order.user && order.user._id.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+    // Security: Admins can always download. Customers can only download their own orders.
+    const orderUserId = order.user?._id
+      ? order.user._id.toString()
+      : order.user
+      ? order.user.toString()
+      : null;
+
+    if (req.user?.role !== "admin" && orderUserId && orderUserId !== req.user?._id?.toString()) {
       return res.status(403).json({ message: "Not authorized to download this invoice" });
     }
 

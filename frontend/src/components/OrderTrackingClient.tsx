@@ -42,9 +42,14 @@ export default function OrderTrackingClient({ orderId }: { orderId: string }) {
     try {
       setDownloading(true);
       await apiService.orders.downloadInvoice(order._id);
-    } catch (err) {
-      console.error("Failed to download invoice:", err);
-      alert("Failed to generate/download invoice PDF. Please try again or contact support.");
+    } catch (err: any) {
+      console.error("Failed to download invoice via blob:", err);
+      try {
+        const url = apiService.orders.getInvoiceUrl(order._id);
+        window.open(url, "_blank");
+      } catch {
+        alert(err.message || "Failed to generate/download invoice PDF. Please try again or contact support.");
+      }
     } finally {
       setDownloading(false);
     }

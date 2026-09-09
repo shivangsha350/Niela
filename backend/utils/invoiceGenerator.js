@@ -1,7 +1,9 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
 import puppeteer from "puppeteer-core";
+import { generatePdfKitInvoice } from "./pdfKitInvoice.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1154,43 +1156,55 @@ export const generateInvoiceHtml = (order) => {
 };
 
 /**
- * Generates an A4 PDF Buffer using Puppeteer and headless browser
+ * Generates an A4 PDF Buffer using Puppeteer or pure-JS PDFKit fallback
  */
 export const generateInvoicePdf = async (order) => {
   const browserPath = getBrowserExecutablePath();
+
+  // If no Chrome / Edge browser executable found on system (e.g. Render.com Linux container),
+  // immediately use the lightweight, high-performance pure-JS PDFKit generator
   if (!browserPath) {
-    throw new Error(
-      "No supported browser executable (Google Chrome or Microsoft Edge) found on the host system."
-    );
+    console.log("[InvoiceGenerator] No browser executable found on host. Using PDFKit invoice generator.");
+    return await generatePdfKitInvoice(order);
   }
 
   const html = generateInvoiceHtml(order);
+  const tempProfileDir = fs.mkdtempSync(path.join(os.tmpdir(), "niela_invoice_pdf_"));
 
-  const browser = await puppeteer.launch({
-    executablePath: browserPath,
-    headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-accelerated-2d-canvas",
-      "--no-first-run",
-      "--no-zygote",
-      "--disable-gpu",
-    ],
-  });
-
+  let browser;
   try {
+    browser = await puppeteer.launch({
+      executablePath: browserPath,
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--no-first-run",
+        "--no-zygote",
+        "--disable-gpu",
+        `--user-data-dir=${tempProfileDir}`,
+      ],
+    });
+
     const page = await browser.newPage();
     
     // Set viewport to standard A4 ratio
     await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });
 
-    // Set HTML content and wait until network is completely idle (fonts and images loaded)
+    // Set HTML content and wait for page load
     await page.setContent(html, {
-      waitUntil: ["load", "networkidle0"],
-      timeout: 30000,
+      waitUntil: ["domcontentloaded", "load"],
+      timeout: 20000,
     });
+
+    // Ensure fonts are completely loaded
+    try {
+      await page.evaluateHandle("document.fonts.ready");
+    } catch {
+      // Graceful fallback
+    }
 
     const pdfBuffer = await page.pdf({
       format: "A4",
@@ -1205,8 +1219,18 @@ export const generateInvoicePdf = async (order) => {
     });
 
     return pdfBuffer;
+  } catch (err) {
+    console.warn("[InvoiceGenerator] Puppeteer PDF generation failed, falling back to PDFKit:", err.message);
+    return await generatePdfKitInvoice(order);
   } finally {
-    await browser.close();
+    if (browser) {
+      try {
+        await browser.close();
+      } catch {}
+    }
+    try {
+      fs.rmSync(tempProfileDir, { recursive: true, force: true });
+    } catch {}
   }
 };
 
