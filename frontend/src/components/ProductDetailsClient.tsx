@@ -16,7 +16,10 @@ interface ClientProps {
 export default function ProductDetailsClient({ productId, initialProduct }: ClientProps) {
   const { products, loading } = useShop();
 
-  const product = products.find((p) => p._id === productId) || initialProduct;
+  const product =
+    products.find(
+      (p) => p._id === productId || p.slug === productId || p.dbId === productId
+    ) || initialProduct;
 
   if (loading && !product) {
     return (

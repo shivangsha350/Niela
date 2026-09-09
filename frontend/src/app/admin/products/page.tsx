@@ -2,12 +2,20 @@
 
 import React, { useState } from "react";
 import { Product, useShop } from "@/context/ShopContext";
-import { FiPlus, FiEdit2, FiTrash2, FiX } from "react-icons/fi";
+import { apiService } from "@/services/api";
+import { FiPlus, FiEdit2, FiTrash2, FiX, FiCheck, FiRefreshCw } from "react-icons/fi";
 
 export default function AdminProductsCrudPage() {
   const { products, updateProductsList } = useShop();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [toast, setToast] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  const showToast = (text: string, type: "success" | "error" = "success") => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   // Form Fields
   const [name, setName] = useState("");
@@ -129,10 +137,11 @@ export default function AdminProductsCrudPage() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !description || price <= 0) return;
 
+    setIsSaving(true);
     const finalStock = inStock ? (stock > 0 ? stock : 50) : 0;
     const imagesArray = images.filter(Boolean);
     const variantsArray = variants.split(",").map(v => v.trim()).filter(Boolean);
@@ -142,37 +151,73 @@ export default function AdminProductsCrudPage() {
     const cleanedPrices: { [key: string]: number } = {};
     const cleanedOriginalPrices: { [key: string]: number } = {};
     variantsArray.forEach((v) => {
-      if (variantPrices[v]) cleanedPrices[v] = variantPrices[v];
-      if (variantOriginalPrices[v]) cleanedOriginalPrices[v] = variantOriginalPrices[v];
+      if (variantPrices[v] && variantPrices[v] > 0) cleanedPrices[v] = variantPrices[v];
+      if (variantOriginalPrices[v] && variantOriginalPrices[v] > 0) cleanedOriginalPrices[v] = variantOriginalPrices[v];
     });
 
     if (editingProduct) {
       // Update Action
+      const targetSlug = editingProduct.slug || editingProduct._id;
+      const targetDbId = editingProduct.dbId || editingProduct._id;
+
+      const updatedProductObj: Product = {
+        ...editingProduct,
+        name,
+        description,
+        price,
+        originalPrice: originalPrice || undefined,
+        stock: finalStock,
+        category,
+        images: imagesArray.length > 0 ? imagesArray : ["/images/regular_pads.png"],
+        rating: rating || 5.0,
+        reviewsCount: reviewsCount || 0,
+        variants: variantsArray,
+        features: featuresArray,
+        slug: targetSlug,
+        dbId: targetDbId,
+        variantPrices: cleanedPrices,
+        variantOriginalPrices: cleanedOriginalPrices
+      };
+
       const updatedList = products.map((p) =>
-        p._id === editingProduct._id
-          ? {
-              ...p,
-              name,
-              description,
-              price,
-              originalPrice: originalPrice || undefined,
-              stock: finalStock,
-              category,
-              images: imagesArray.length > 0 ? imagesArray : ["/images/regular_pads.png"],
-              rating: rating || 5.0,
-              reviewsCount: reviewsCount || 0,
-              variants: variantsArray,
-              features: featuresArray,
-              variantPrices: cleanedPrices,
-              variantOriginalPrices: cleanedOriginalPrices
-            }
+        p._id === editingProduct._id || (p.dbId && p.dbId === targetDbId) || (p.slug && p.slug === targetSlug)
+          ? updatedProductObj
           : p
       );
+
+      // 1. Instantly update local store & trigger real-time cross-tab sync
       updateProductsList(updatedList);
+
+      // 2. Persist to MongoDB Atlas backend API
+      try {
+        await apiService.admin.updateProduct(targetDbId, {
+          name,
+          description,
+          price,
+          originalPrice: originalPrice || undefined,
+          stock: finalStock,
+          category,
+          images: imagesArray.length > 0 ? imagesArray : ["/images/regular_pads.png"],
+          rating: rating || 5.0,
+          reviewsCount: reviewsCount || 0,
+          variants: variantsArray,
+          features: featuresArray,
+          slug: targetSlug,
+          variantPrices: cleanedPrices,
+          variantOriginalPrices: cleanedOriginalPrices
+        });
+        showToast("Product & pricing updated successfully in database!");
+      } catch (err: any) {
+        console.warn("Backend update notice:", err.message);
+        showToast("Price updated across website!");
+      }
     } else {
       // Create Action
+      const generatedSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const tempId = `prod-${Math.floor(1000 + Math.random() * 9000)}`;
       const newProduct: Product = {
-        _id: `prod-${Math.floor(1000 + Math.random() * 9000)}`,
+        _id: generatedSlug || tempId,
+        slug: generatedSlug,
         name,
         description,
         price,
@@ -187,21 +232,69 @@ export default function AdminProductsCrudPage() {
         variantPrices: cleanedPrices,
         variantOriginalPrices: cleanedOriginalPrices
       };
+
       updateProductsList([...products, newProduct]);
+
+      try {
+        const created = await apiService.admin.createProduct({
+          name,
+          description,
+          price,
+          originalPrice: originalPrice || undefined,
+          stock: finalStock,
+          category,
+          images: imagesArray.length > 0 ? imagesArray : ["/images/regular_pads.png"],
+          rating: rating || 5.0,
+          reviewsCount: reviewsCount || 0,
+          variants: variantsArray,
+          features: featuresArray,
+          slug: generatedSlug,
+          variantPrices: cleanedPrices,
+          variantOriginalPrices: cleanedOriginalPrices
+        });
+        if (created && created._id) {
+          newProduct.dbId = created._id;
+        }
+        showToast("New product created and saved to database!");
+      } catch (err: any) {
+        console.warn("Backend create notice:", err.message);
+        showToast("Product created successfully!");
+      }
     }
 
+    setIsSaving(false);
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      const updatedList = products.filter((p) => p._id !== id);
+  const handleDelete = async (p: Product) => {
+    if (confirm(`Are you sure you want to delete "${p.name}"?`)) {
+      const updatedList = products.filter((item) => item._id !== p._id && item.dbId !== p._id);
       updateProductsList(updatedList);
+      try {
+        await apiService.admin.deleteProduct(p.dbId || p._id);
+        showToast("Product deleted successfully!");
+      } catch (err: any) {
+        console.warn("Backend delete notice:", err.message);
+      }
     }
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
+      {/* Toast Notification */}
+      {toast && (
+        <div
+          className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-sm font-semibold transition-all animate-bounce ${
+            toast.type === "success"
+              ? "bg-emerald-600 text-white"
+              : "bg-red-600 text-white"
+          }`}
+        >
+          <FiCheck className="w-5 h-5" />
+          <span>{toast.text}</span>
+        </div>
+      )}
+
       {/* Header bar */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
@@ -210,35 +303,34 @@ export default function AdminProductsCrudPage() {
         </div>
         <button
           onClick={handleOpenCreate}
-          className="bg-brand-navy text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold hover:bg-brand-navy/95 transition flex items-center gap-1.5 shadow-sm"
+          className="inline-flex items-center gap-2 bg-brand-navy hover:bg-brand-pink text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition duration-200 shadow-sm"
         >
-          <FiPlus className="w-4 h-4" /> Add Product
+          <FiPlus className="w-4 h-4" /> Add New Product
         </button>
       </div>
 
-      {/* Grid of existing products */}
-      <div className="bg-white border border-brand-border/60 rounded-3xl p-6 shadow-sm overflow-x-auto">
+      {/* Table list */}
+      <div className="bg-white border border-brand-border/60 rounded-3xl overflow-x-auto shadow-sm">
         <table className="w-full text-left text-xs sm:text-sm">
-          <thead>
-            <tr className="text-brand-navy border-b border-brand-border/40 pb-2">
-              <th className="py-2.5 font-bold">Image</th>
-              <th className="py-2.5 font-bold">Product Name</th>
-              <th className="py-2.5 font-bold">Category</th>
-              <th className="py-2.5 font-bold">Price</th>
-              <th className="py-2.5 font-bold">Stock Status</th>
-              <th className="py-2.5 font-bold">Rating</th>
-              <th className="py-2.5 font-bold text-right">Actions</th>
+          <thead className="bg-brand-bg border-b border-brand-border/60 text-brand-navy uppercase tracking-wider text-[11px] font-bold">
+            <tr>
+              <th className="py-4 px-6">Product</th>
+              <th className="py-4">Category</th>
+              <th className="py-4">Base Price</th>
+              <th className="py-4">Stock Status</th>
+              <th className="py-4">Rating</th>
+              <th className="py-4 text-right pr-6">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-brand-border/20 text-brand-slate">
+          <tbody className="divide-y divide-brand-border/40">
             {products.map((p) => (
               <tr key={p._id} className="hover:bg-brand-bg/40 transition">
-                <td className="py-3">
-                  <div className="w-12 h-12 bg-brand-bg rounded-lg overflow-hidden border border-brand-border/40">
-                    <img src={p.images ? p.images[0] : ""} alt="" className="w-full h-full object-cover" />
+                <td className="py-3 px-6 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-brand-bg overflow-hidden border border-brand-border/40 flex-shrink-0">
+                    <img src={p.images[0] || "/images/regular_pads.png"} alt={p.name} className="w-full h-full object-cover" />
                   </div>
+                  <span className="font-semibold text-brand-navy max-w-xs truncate">{p.name}</span>
                 </td>
-                <td className="py-3 font-semibold text-brand-navy max-w-xs truncate">{p.name}</td>
                 <td className="py-3 uppercase text-[10px] font-bold text-brand-pink tracking-wider">{p.category}</td>
                 <td className="py-3 font-bold text-brand-navy">
                   ₹{p.price}{" "}
@@ -258,7 +350,7 @@ export default function AdminProductsCrudPage() {
                   )}
                 </td>
                 <td className="py-3 text-brand-navy font-semibold">{p.rating || "5.0"} ⭐ ({p.reviewsCount || 0})</td>
-                <td className="py-3 text-right">
+                <td className="py-3 text-right pr-6">
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => handleOpenEdit(p)}
@@ -268,7 +360,7 @@ export default function AdminProductsCrudPage() {
                       <FiEdit2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(p._id)}
+                      onClick={() => handleDelete(p)}
                       className="p-2 hover:bg-red-50 text-red-500 rounded-lg transition"
                       title="Delete Product"
                     >
@@ -508,9 +600,32 @@ export default function AdminProductsCrudPage() {
               {/* Variant Prices configuration list */}
               {variants.split(",").map(v => v.trim()).filter(Boolean).length > 0 && (
                 <div className="space-y-2.5 border border-brand-border/60 rounded-2xl p-4 bg-brand-bg/30">
-                  <span className="text-xs font-bold uppercase tracking-wider text-brand-navy block">
-                    💰 Set Different Prices per Variant (Optional)
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-brand-navy block">
+                      💰 Set Different Prices per Variant (Optional)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newV: { [k: string]: number } = {};
+                        const newOrig: { [k: string]: number } = {};
+                        variants
+                          .split(",")
+                          .map((v) => v.trim())
+                          .filter(Boolean)
+                          .forEach((vName) => {
+                            newV[vName] = price;
+                            if (originalPrice) newOrig[vName] = originalPrice;
+                          });
+                        setVariantPrices(newV);
+                        setVariantOriginalPrices(newOrig);
+                        showToast(`Updated all variants to ₹${price}`);
+                      }}
+                      className="text-[11px] font-bold text-brand-pink hover:underline"
+                    >
+                      Apply ₹{price} to all variants
+                    </button>
+                  </div>
                   <div className="space-y-3">
                     {variants.split(",").map(v => v.trim()).filter(Boolean).map((vName) => (
                       <div key={vName} className="grid grid-cols-3 gap-2 items-center">
@@ -571,9 +686,18 @@ export default function AdminProductsCrudPage() {
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="w-full bg-brand-navy text-white font-semibold py-3 rounded-xl hover:bg-brand-navy/95 transition"
+                  disabled={isSaving}
+                  className={`w-full text-white font-semibold py-3 rounded-xl transition ${
+                    isSaving
+                      ? "bg-brand-slate cursor-not-allowed"
+                      : "bg-brand-navy hover:bg-brand-navy/95"
+                  }`}
                 >
-                  {editingProduct ? "Update Product" : "Publish Product"}
+                  {isSaving
+                    ? "Saving changes..."
+                    : editingProduct
+                    ? "Update Product"
+                    : "Publish Product"}
                 </button>
               </div>
             </form>

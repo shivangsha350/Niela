@@ -55,6 +55,18 @@ const productSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    slug: {
+      type: String,
+      trim: true,
+    },
+    variantPrices: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    variantOriginalPrices: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
   },
   { timestamps: true }
 );

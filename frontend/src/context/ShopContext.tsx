@@ -2,9 +2,12 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { mockProducts } from "@/data/products";
+import { apiService } from "@/services/api";
 
 export interface Product {
   _id: string;
+  dbId?: string;
+  slug?: string;
   name: string;
   description: string;
   price: number;
@@ -64,7 +67,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load state on mount
+  // Load state on mount and sync live products
   useEffect(() => {
     if (typeof window !== "undefined") {
       const storedCart = localStorage.getItem("niela_cart");
@@ -92,6 +95,65 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem("niela_admin_products", JSON.stringify(mockProducts));
       }
       setLoading(false);
+
+      // Fetch latest live products from backend MongoDB Atlas
+      apiService.products
+        .getAll()
+        .then((data: any[]) => {
+          if (Array.isArray(data) && data.length > 0) {
+            const liveList: Product[] = data.map((item: any) => ({
+              _id: item.slug || item._id,
+              dbId: item._id,
+              slug: item.slug || item._id,
+              name: item.name,
+              description: item.description,
+              price: item.price,
+              originalPrice: item.originalPrice,
+              images: item.images && item.images.length > 0 ? item.images : ["/images/regular_pads.png"],
+              category: item.category,
+              stock: item.stock !== undefined ? item.stock : 50,
+              rating: item.rating || 5.0,
+              reviewsCount: item.reviewsCount || 0,
+              features: item.features || [],
+              variants: item.variants || [],
+              variantPrices: item.variantPrices || {},
+              variantOriginalPrices: item.variantOriginalPrices || {},
+            }));
+            setProducts(liveList);
+            try {
+              localStorage.setItem("niela_admin_products", JSON.stringify(liveList));
+            } catch {}
+          }
+        })
+        .catch((err) => {
+          console.warn("[ShopContext] Using cached/mock products:", err.message);
+        });
+
+      // Synchronize changes across browser tabs & local events
+      const handleStorageUpdate = (e: StorageEvent) => {
+        if (e.key === "niela_admin_products" && e.newValue) {
+          try {
+            setProducts(JSON.parse(e.newValue));
+          } catch {}
+        }
+      };
+
+      const handleCustomUpdate = () => {
+        const current = localStorage.getItem("niela_admin_products");
+        if (current) {
+          try {
+            setProducts(JSON.parse(current));
+          } catch {}
+        }
+      };
+
+      window.addEventListener("storage", handleStorageUpdate);
+      window.addEventListener("niela_products_updated", handleCustomUpdate);
+
+      return () => {
+        window.removeEventListener("storage", handleStorageUpdate);
+        window.removeEventListener("niela_products_updated", handleCustomUpdate);
+      };
     }
   }, []);
 
@@ -200,6 +262,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProducts(newList);
     try {
       localStorage.setItem("niela_admin_products", JSON.stringify(newList));
+      window.dispatchEvent(new Event("niela_products_updated"));
     } catch (e) {
       console.error("Failed to save products to localStorage:", e);
       alert("Storage Quota Exceeded! The uploaded image file size is too large for the browser's storage capacity. Please use a smaller file or clear your browser data.");

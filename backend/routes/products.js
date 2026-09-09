@@ -1,4 +1,5 @@
 import express from "express";
+import mongoose from "mongoose";
 import Product from "../models/Product.js";
 import Category from "../models/Category.js";
 import { protect, admin } from "../middleware/auth.js";
@@ -26,10 +27,19 @@ router.get("/products", async (req, res) => {
 });
 
 // @route   GET /api/products/:id
-// @desc    Get a single product
+// @desc    Get a single product by ObjectId or slug
 router.get("/products/:id", async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    let product;
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      product = await Product.findById(req.params.id);
+    }
+    if (!product) {
+      product = await Product.findOne({
+        $or: [{ slug: req.params.id }, { name: req.params.id }],
+      });
+    }
+
     if (product) {
       res.json(product);
     } else {
@@ -58,7 +68,21 @@ router.get("/categories", async (req, res) => {
 // @route   POST /api/products
 // @desc    Create a product
 router.post("/products", protect, admin, async (req, res) => {
-  const { name, description, price, originalPrice, images, category, stock, features, variants } = req.body;
+  const {
+    name,
+    description,
+    price,
+    originalPrice,
+    images,
+    category,
+    stock,
+    features,
+    variants,
+    slug,
+    variantPrices,
+    variantOriginalPrices,
+  } = req.body;
+
   try {
     const product = new Product({
       name,
@@ -70,6 +94,9 @@ router.post("/products", protect, admin, async (req, res) => {
       stock,
       features,
       variants,
+      slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      variantPrices: variantPrices || {},
+      variantOriginalPrices: variantOriginalPrices || {},
     });
     const createdProduct = await product.save();
     res.status(201).json(createdProduct);
@@ -79,11 +106,38 @@ router.post("/products", protect, admin, async (req, res) => {
 });
 
 // @route   PUT /api/products/:id
-// @desc    Update a product
+// @desc    Update a product by ObjectId or slug
 router.put("/products/:id", protect, admin, async (req, res) => {
-  const { name, description, price, originalPrice, images, category, stock, features, variants } = req.body;
+  const {
+    name,
+    description,
+    price,
+    originalPrice,
+    images,
+    category,
+    stock,
+    features,
+    variants,
+    slug,
+    variantPrices,
+    variantOriginalPrices,
+  } = req.body;
+
   try {
-    const product = await Product.findById(req.params.id);
+    let product;
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      product = await Product.findById(req.params.id);
+    }
+    if (!product) {
+      product = await Product.findOne({
+        $or: [
+          { slug: req.params.id },
+          { name: req.params.id },
+          { name: name },
+        ],
+      });
+    }
+
     if (product) {
       product.name = name || product.name;
       product.description = description || product.description;
@@ -94,11 +148,30 @@ router.put("/products/:id", protect, admin, async (req, res) => {
       product.stock = stock !== undefined ? stock : product.stock;
       product.features = features || product.features;
       product.variants = variants || product.variants;
+      if (slug) product.slug = slug;
+      if (variantPrices !== undefined) product.variantPrices = variantPrices;
+      if (variantOriginalPrices !== undefined) product.variantOriginalPrices = variantOriginalPrices;
 
       const updatedProduct = await product.save();
       res.json(updatedProduct);
     } else {
-      res.status(404).json({ message: "Product not found" });
+      // If not found, upsert a new product
+      const newProduct = new Product({
+        name,
+        description,
+        price,
+        originalPrice,
+        images,
+        category,
+        stock,
+        features,
+        variants,
+        slug: slug || req.params.id,
+        variantPrices: variantPrices || {},
+        variantOriginalPrices: variantOriginalPrices || {},
+      });
+      const saved = await newProduct.save();
+      res.status(201).json(saved);
     }
   } catch (error) {
     res.status(400).json({ message: error.message });
