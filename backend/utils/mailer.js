@@ -87,6 +87,9 @@ const sendEmail = async ({ to, subject, text, html, attachments }) => {
           user: process.env.SMTP_USER || "Niela@nielacare.com",
           accessToken: accessToken,
         },
+        connectionTimeout: 8000,
+        greetingTimeout: 8000,
+        socketTimeout: 10000,
       });
     } catch (error) {
       console.error("SMTP OAuth Transporter setup failed:", error.message);
@@ -102,6 +105,9 @@ const sendEmail = async ({ to, subject, text, html, attachments }) => {
         user: process.env.SMTP_USER || "",
         pass: (process.env.SMTP_PASS || "").replace(/\s/g, ""),
       },
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 10000,
     });
   }
 
