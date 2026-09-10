@@ -190,12 +190,20 @@ export default function FaqBot() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 font-sans">
       {open && (
-        <div className="mb-3 flex h-96 w-80 flex-col overflow-hidden rounded-2xl border border-black/10 bg-white shadow-2xl">
+        <div className="mb-3 flex h-96 w-[calc(100vw-2rem)] max-w-[340px] sm:w-80 flex-col overflow-hidden rounded-2xl border border-black/10 bg-white shadow-2xl">
           <div className="flex items-center justify-between bg-[#111a2e] px-4 py-3">
             <div className="flex items-center gap-2">
-              <Image src="/images/niela-assistant.png" alt="" width={28} height={28} />
+              <div className="relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0 bg-white/10">
+                <Image
+                  src="/images/niela-assistant-icon.png"
+                  alt="Niela"
+                  width={28}
+                  height={28}
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <span className="text-sm font-medium tracking-wide text-white">
                 Niela Assistant
               </span>
@@ -248,13 +256,22 @@ export default function FaqBot() {
 
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-lg hover:scale-105 transition-transform overflow-hidden"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-xl hover:scale-105 transition-transform overflow-hidden border border-brand-pink/20"
         aria-label="Open FAQ chat"
       >
         {open ? (
-          <span className="text-xl text-[#1a1a1a]">✕</span>
+          <span className="text-xl text-[#1a1a1a] font-bold">✕</span>
         ) : (
-          <Image src="/images/niela-assistant.png" alt="Niela Assistant" width={56} height={56} />
+          <div className="relative w-full h-full">
+            <Image
+              src="/images/niela-assistant-icon.png"
+              alt="Niela Assistant"
+              fill
+              sizes="56px"
+              priority
+              className="object-cover"
+            />
+          </div>
         )}
       </button>
     </div>

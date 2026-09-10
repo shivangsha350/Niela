@@ -92,33 +92,36 @@ export default function Creative() {
         .section {
           max-width: 1160px;
           margin: 0 auto;
-          padding: 50px 32px 80px;
-          background:#faf8f5;
+          padding: 60px 24px 80px;
+          background: #faf8f5;
           font-family: 'Inter', sans-serif;
           color: #2b2622;
         }
         .head {
-          max-width: 1200px;
-          margin-bottom: 64px;
+          max-width: 640px;
+          margin: 0 auto 56px;
+          text-align: center;
         }
         .head h2 {
           font-family: 'Baloo 2', sans-serif;
           font-weight: 700;
           font-size: 38px;
-          line-height: 1.15;
-          margin: 0 270px 12px;
-          
+          line-height: 1.2;
+          margin: 0 0 14px 0;
+          color: #2b2622;
         }
         .head p {
           font-size: 16px;
           line-height: 1.6;
           color: #726a63;
-          margin: 0 185;
+          margin: 0 auto;
+          max-width: 480px;
         }
         .grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           gap: 28px;
+          align-items: stretch;
         }
         .card {
           position: relative;
@@ -265,14 +268,36 @@ export default function Creative() {
           max-width: 220px;
         }
         @media (max-width: 860px) {
-          .grid {
-            grid-template-columns: 1fr;
-          }
           .section {
-            padding: 70px 22px;
+            padding: 48px 18px 64px;
+          }
+          .head {
+            margin-bottom: 48px;
+            padding: 0 8px;
           }
           .head h2 {
-            font-size: 30px;
+            font-size: 26px;
+            line-height: 1.25;
+            margin: 0 0 10px 0;
+          }
+          .head p {
+            font-size: 14.5px;
+            line-height: 1.55;
+            max-width: 100%;
+          }
+          .grid {
+            grid-template-columns: 1fr;
+            gap: 58px;
+            max-width: 360px;
+            margin: 0 auto;
+          }
+          .card {
+            padding: 68px 20px 28px;
+          }
+          .sticker {
+            top: -42px;
+            width: 118px;
+            height: 118px;
           }
         }
       `}</style>

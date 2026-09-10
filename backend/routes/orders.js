@@ -27,7 +27,7 @@ const sendOrderConfirmationEmail = async (orderId) => {
     const order = await Order.findById(orderId).populate("user", "email name");
     if (!order) return;
 
-    const email = order.user?.email || order.shippingDetails?.email;
+    const email = order.shippingDetails?.email || order.user?.email;
     if (!email || !email.includes("@")) {
       console.warn(`[Mailer] Invalid or missing email address for order ${orderId}. Skipping email confirmation.`);
       return;
@@ -170,9 +170,16 @@ const sendOrderConfirmationEmail = async (orderId) => {
 };
 
 // Helper to send order status update email to customer
-export const sendOrderStatusUpdateEmail = async (order, newStatus) => {
+export const sendOrderStatusUpdateEmail = async (orderOrId, newStatus) => {
   try {
-    const email = order.user?.email || order.shippingDetails?.email;
+    const orderId = orderOrId?._id || orderOrId;
+    const order = await Order.findById(orderId).populate("user", "name email");
+    if (!order) {
+      console.warn(`[Mailer] Order ${orderId} not found. Skipping status update email.`);
+      return;
+    }
+
+    const email = order.shippingDetails?.email || order.user?.email;
     if (!email || !email.includes("@")) {
       console.warn(`[Mailer] Invalid or missing email address for order ${order._id}. Skipping status update email.`);
       return;

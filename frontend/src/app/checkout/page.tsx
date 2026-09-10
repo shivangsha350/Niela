@@ -101,6 +101,7 @@ export default function CheckoutPage() {
         })),
         shippingDetails: {
           fullName,
+          email,
           address,
           city,
           zip,
