@@ -276,4 +276,133 @@ router.put("/update-password", protect, async (req, res) => {
   }
 });
 
+// @route   POST /api/auth/forgot-password
+// @desc    Send password reset OTP to email
+// @access  Public
+router.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  if (!email || !email.trim()) {
+    return res.status(400).json({ message: "Email is required." });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  try {
+    const user = await User.findOne({ email: cleanEmail });
+    if (!user) {
+      return res.status(404).json({ message: "No account found with this email address." });
+    }
+
+    if (user.authProvider === "google" && !user.password) {
+      return res.status(400).json({
+        message: "This account was registered using Google Sign-In. Please sign in using Google.",
+      });
+    }
+
+    // Generate a 6-digit numeric OTP code
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store in DB with 10 min TTL
+    await Otp.findOneAndUpdate(
+      { email: cleanEmail },
+      { otp, createdAt: new Date() },
+      { upsert: true, new: true }
+    );
+
+    console.log("\n==================================================");
+    console.log(`[Forgot Password] Generated OTP for ${cleanEmail}: ${otp}`);
+    console.log("==================================================\n");
+
+    // Send email using Microsoft 365 / SMTP
+    try {
+      await sendEmail({
+        to: cleanEmail,
+        subject: "Niela - Password Reset Verification OTP",
+        text: `Your password reset OTP is: ${otp}. It will expire in 10 minutes. If you did not request this, please ignore this email.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 28px; border: 1px solid #fce7f3; border-radius: 20px; background-color: #ffffff; color: #0f172a;">
+            <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #f1f5f9;">
+              <h2 style="font-family: Georgia, serif; font-size: 30px; color: #0f172a; margin: 0; font-weight: bold;">niela<span style="font-size: 13px; color: #db2777;">®</span></h2>
+              <div style="font-size: 9px; letter-spacing: 2px; color: #db2777; font-weight: 800; text-transform: uppercase; margin-top: 2px;">— CARE YOU CAN FEEL —</div>
+            </div>
+
+            <div style="text-align: center; margin: 24px 0 16px;">
+              <span style="background-color: #fdf2f4; color: #db2777; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; padding: 4px 14px; border-radius: 9999px;">Password Reset Request</span>
+              <h1 style="color: #0f172a; margin: 14px 0 6px 0; font-size: 22px; font-weight: 800;">Reset Your Password</h1>
+              <p style="color: #64748b; font-size: 13.5px; margin: 0 auto; max-width: 440px; line-height: 1.5;">
+                Hi ${user.name || "there"}, we received a request to reset your password. Use the verification code below to set a new password:
+              </p>
+            </div>
+
+            <div style="background-color: #fdf2f8; border: 2px dashed #f472b6; border-radius: 14px; padding: 22px; text-align: center; margin: 20px 0;">
+              <div style="font-size: 38px; font-weight: 800; letter-spacing: 8px; color: #db2777; font-family: monospace;">${otp}</div>
+              <p style="margin: 6px 0 0 0; font-size: 11px; color: #9d174d; font-weight: 600;">Valid for 10 minutes</p>
+            </div>
+
+            <div style="background-color: #f8fafc; border-radius: 12px; padding: 14px; margin-bottom: 20px; font-size: 12px; color: #64748b; line-height: 1.5;">
+              🔒 <strong>Security Tip:</strong> Never share this code with anyone. Niela support will never ask you for your OTP. If you did not request this, you can safely ignore this email.
+            </div>
+
+            <div style="border-top: 1px solid #f1f5f9; padding-top: 16px; text-align: center; font-size: 11px; color: #94a3b8;">
+              <p style="margin: 0;">Need help? Write to us at <a href="mailto:support@nielacare.com" style="color: #db2777; text-decoration: none; font-weight: 600;">support@nielacare.com</a></p>
+            </div>
+          </div>
+        `,
+      });
+    } catch (emailErr) {
+      console.error(`[Mailer] Error sending reset OTP email: ${emailErr.message}. Fallback: OTP logged to console.`);
+    }
+
+    res.status(200).json({ message: "Password reset OTP sent to your email." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   POST /api/auth/reset-password
+// @desc    Verify OTP and update user password
+// @access  Public
+router.post("/reset-password", async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({ message: "Email, OTP code, and new password are required." });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ message: "Password must be at least 6 characters long." });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  try {
+    const user = await User.findOne({ email: cleanEmail });
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Verify OTP from database
+    const otpRecord = await Otp.findOne({ email: cleanEmail });
+    if (!otpRecord || otpRecord.otp !== otp.trim()) {
+      return res.status(400).json({ message: "Invalid or expired OTP code." });
+    }
+
+    // Delete OTP record after successful validation
+    await Otp.deleteOne({ email: cleanEmail });
+
+    // Update password (triggers userSchema pre('save') bcrypt hashing)
+    user.password = newPassword;
+    await user.save();
+
+    console.log(`[Password Reset] Password updated successfully for: ${cleanEmail}`);
+
+    res.status(200).json({
+      success: true,
+      message: "Password updated successfully! You can now login with your new password.",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;

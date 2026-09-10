@@ -82,7 +82,16 @@ export default function Footer() {
 
         {/* Bottom footer bar */}
         <div className="pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500 gap-4">
-          <p>© {currentYear} Poiya Healthcare India Pvt. Ltd. (Niela). All rights reserved.</p>
+          <div className="text-center md:text-left">
+            <p>© {currentYear} Poiya Healthcare India Pvt. Ltd. (Niela). All rights reserved.</p>
+            <p className="mt-1.5 text-[11.5px] text-slate-400">
+              Designed and maintained by <span className="text-slate-300 font-medium">Biteburst technologies</span> (
+              <a href="mailto:bitebursttechnologies@gmail.com" className="hover:text-brand-pink transition underline">
+                bitebursttechnologies@gmail.com
+              </a>
+              )
+            </p>
+          </div>
           <div className="flex flex-wrap justify-center gap-x-5 gap-y-2">
             <Link href="/privacy" className="hover:text-brand-pink transition">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-brand-pink transition">Terms of Use</Link>
