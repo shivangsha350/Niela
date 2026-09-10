@@ -67,10 +67,96 @@ const getAccessToken = async () => {
 };
 
 /**
- * Sends email using Nodemailer.
- * Automatically selects between Microsoft 365 OAuth 2.0 or SMTP Password fallback.
+ * Attempt sending via Microsoft Graph REST API over HTTPS (Port 443).
+ * This bypasses blocked SMTP ports (587, 465) on cloud platforms like Render.
+ */
+const sendEmailViaGraph = async ({ to, subject, text, html, attachments }) => {
+  const tenantId = process.env.SMTP_TENANT_ID;
+  const clientId = process.env.SMTP_CLIENT_ID;
+  const clientSecret = process.env.SMTP_CLIENT_SECRET;
+  const smtpUser = process.env.SMTP_USER || "Niela@nielacare.com";
+
+  if (!tenantId || !clientId || !clientSecret) return null;
+
+  try {
+    const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+    const params = new URLSearchParams();
+    params.append("client_id", clientId);
+    params.append("client_secret", clientSecret);
+    params.append("scope", "https://graph.microsoft.com/.default");
+    params.append("grant_type", "client_credentials");
+
+    const tokenRes = await fetch(tokenUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
+    });
+
+    if (!tokenRes.ok) return null;
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) return null;
+
+    const message = {
+      subject,
+      body: {
+        contentType: html ? "HTML" : "Text",
+        content: html || text || "",
+      },
+      toRecipients: [
+        {
+          emailAddress: {
+            address: to,
+          },
+        },
+      ],
+    };
+
+    if (attachments && attachments.length > 0) {
+      message.attachments = attachments.map((att) => ({
+        "@odata.type": "#microsoft.graph.fileAttachment",
+        name: att.filename || "attachment",
+        contentType: att.contentType || "application/octet-stream",
+        contentBytes: Buffer.isBuffer(att.content)
+          ? att.content.toString("base64")
+          : Buffer.from(att.content || "").toString("base64"),
+      }));
+    }
+
+    const sendUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(smtpUser)}/sendMail`;
+    const sendRes = await fetch(sendUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message, saveToSentItems: false }),
+    });
+
+    if (sendRes.ok || sendRes.status === 202) {
+      console.log(`[Microsoft Graph API] Email successfully delivered to ${to} via HTTPS 443`);
+      return { messageId: "graph-" + Date.now(), accepted: [to] };
+    }
+
+    const errText = await sendRes.text();
+    console.warn(`[Microsoft Graph API] SendMail response ${sendRes.status}: ${errText.slice(0, 120)}. Falling back to SMTP.`);
+    return null;
+  } catch (err) {
+    console.warn(`[Microsoft Graph API] Request error: ${err.message}. Falling back to SMTP.`);
+    return null;
+  }
+};
+
+/**
+ * Sends email using Microsoft Graph API (HTTPS 443) or Nodemailer SMTP fallback.
  */
 const sendEmail = async ({ to, subject, text, html, attachments }) => {
+  // 1. Try Microsoft Graph API over HTTPS Port 443 first (Works on Render without blocked ports)
+  const graphResult = await sendEmailViaGraph({ to, subject, text, html, attachments });
+  if (graphResult) {
+    return graphResult;
+  }
+
+  // 2. Fallback to Nodemailer SMTP
   const useOAuth = !!(process.env.SMTP_CLIENT_ID && process.env.SMTP_CLIENT_SECRET && process.env.SMTP_TENANT_ID);
 
   let transporter;
@@ -87,27 +173,27 @@ const sendEmail = async ({ to, subject, text, html, attachments }) => {
           user: process.env.SMTP_USER || "Niela@nielacare.com",
           accessToken: accessToken,
         },
-        connectionTimeout: 8000,
-        greetingTimeout: 8000,
-        socketTimeout: 10000,
+        connectionTimeout: 6000,
+        greetingTimeout: 6000,
+        socketTimeout: 8000,
       });
     } catch (error) {
       console.error("SMTP OAuth Transporter setup failed:", error.message);
       throw error;
     }
   } else {
-    // Fallback to basic SMTP password authentication (Gmail or Microsoft SMTP basic auth)
+    // Fallback to basic SMTP password authentication
     transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || "smtp.gmail.com",
       port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: process.env.SMTP_SECURE === "true", // true for 465, false for other ports
+      secure: process.env.SMTP_SECURE === "true",
       auth: {
         user: process.env.SMTP_USER || "",
         pass: (process.env.SMTP_PASS || "").replace(/\s/g, ""),
       },
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 10000,
+      connectionTimeout: 6000,
+      greetingTimeout: 6000,
+      socketTimeout: 8000,
     });
   }
 
@@ -130,7 +216,7 @@ const sendEmail = async ({ to, subject, text, html, attachments }) => {
       throw new Error(`Email delivery failed: ${error.message}`);
     }
   } else {
-    // If SMTP credentials aren't configured, we simulate success
+    // If SMTP credentials aren't configured, simulate success
     console.log(`\n--------------------------------------------------`);
     console.log(`[SMTP Simulator] Mail would be sent to: ${to}`);
     console.log(`Subject: ${subject}`);

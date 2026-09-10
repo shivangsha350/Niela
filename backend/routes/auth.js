@@ -44,13 +44,14 @@ router.post("/send-otp", async (req, res) => {
     console.log(`[OTP Verification] Generated OTP for ${email}: ${otp}`);
     console.log("==================================================\n");
 
-    // Attempt to send email
+    // Attempt to send email with 5-second timeout protection
     try {
-      await sendEmail({
-        to: email,
-        subject: "Niela - Email Verification OTP",
-        text: `Your verification OTP is: ${otp}. It will expire in 10 minutes.`,
-        html: `
+      await Promise.race([
+        sendEmail({
+          to: email,
+          subject: "Niela - Email Verification OTP",
+          text: `Your verification OTP is: ${otp}. It will expire in 10 minutes.`,
+          html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
             <div style="text-align: center; margin-bottom: 24px;">
               <h2 style="color: #0f172a; margin: 0; font-size: 24px; font-weight: 800;">Verify Your Email</h2>
@@ -62,9 +63,11 @@ router.post("/send-otp", async (req, res) => {
             <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">This OTP is valid for 10 minutes. If you did not request this code, please ignore this email.</p>
           </div>
         `,
-      });
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Email dispatch timeout (proceeding with OTP)")), 5000))
+      ]);
     } catch (emailErr) {
-      console.error(`[nodemailer] Error sending mail: ${emailErr.message}. Fallback: OTP logged to console.`);
+      console.warn(`[Mailer] Note on mail delivery: ${emailErr.message}. Fallback: OTP logged to console.`);
     }
 
     res.status(200).json({ message: "OTP sent successfully to your email." });
@@ -313,13 +316,14 @@ router.post("/forgot-password", async (req, res) => {
     console.log(`[Forgot Password] Generated OTP for ${cleanEmail}: ${otp}`);
     console.log("==================================================\n");
 
-    // Send email using Microsoft 365 / SMTP
+    // Send email using Microsoft 365 / SMTP with 5-second timeout protection
     try {
-      await sendEmail({
-        to: cleanEmail,
-        subject: "Niela - Password Reset Verification OTP",
-        text: `Your password reset OTP is: ${otp}. It will expire in 10 minutes. If you did not request this, please ignore this email.`,
-        html: `
+      await Promise.race([
+        sendEmail({
+          to: cleanEmail,
+          subject: "Niela - Password Reset Verification OTP",
+          text: `Your password reset OTP is: ${otp}. It will expire in 10 minutes. If you did not request this, please ignore this email.`,
+          html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 28px; border: 1px solid #fce7f3; border-radius: 20px; background-color: #ffffff; color: #0f172a;">
             <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #f1f5f9;">
               <h2 style="font-family: Georgia, serif; font-size: 30px; color: #0f172a; margin: 0; font-weight: bold;">niela<span style="font-size: 13px; color: #db2777;">®</span></h2>
@@ -348,9 +352,11 @@ router.post("/forgot-password", async (req, res) => {
             </div>
           </div>
         `,
-      });
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Email dispatch timeout")), 5000))
+      ]);
     } catch (emailErr) {
-      console.error(`[Mailer] Error sending reset OTP email: ${emailErr.message}. Fallback: OTP logged to console.`);
+      console.warn(`[Mailer] Error sending reset OTP email: ${emailErr.message}. Fallback: OTP logged to console.`);
     }
 
     res.status(200).json({ message: "Password reset OTP sent to your email." });
