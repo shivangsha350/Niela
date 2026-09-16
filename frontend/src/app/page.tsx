@@ -11,11 +11,13 @@ import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
 import Creative from "@/components/Creative";
 import FaqBot from "@/components/FaqBot";
+import NavImage from "@/components/NavImage";
 
 export default function HomePage() {
   return (
     <>
       <Header />
+      <NavImage />
               <FaqBot />
 
       <main className="flex-grow">

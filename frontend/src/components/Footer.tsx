@@ -29,10 +29,10 @@ export default function Footer() {
             </p>
             {/* Social Icons */}
             <div className="flex space-x-4 pt-2">
-              <a href="#" className="p-2 bg-white/5 rounded-full hover:bg-brand-pink hover:text-white transition duration-200" aria-label="Instagram">
+              <a href="https://www.instagram.com/nielacare?utm_source=ig_web_button_share_sheet&stkn=ZDNlZDc0MzIxNw==" className="p-2 bg-white/5 rounded-full hover:bg-brand-pink hover:text-white transition duration-200" aria-label="Instagram">
                 <FaInstagram className="w-4 h-4" />
               </a>
-              <a href="#" className="p-2 bg-white/5 rounded-full hover:bg-brand-pink hover:text-white transition duration-200" aria-label="Facebook">
+              <a href="https://www.facebook.com/share/19HpLVHNsw/" className="p-2 bg-white/5 rounded-full hover:bg-brand-pink hover:text-white transition duration-200" aria-label="Facebook">
                 <FaFacebookF className="w-4 h-4" />
               </a>
               <a href="#" className="p-2 bg-white/5 rounded-full hover:bg-brand-pink hover:text-white transition duration-200" aria-label="Twitter">
