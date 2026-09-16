@@ -108,7 +108,7 @@ export const generatePdfKitInvoice = (order) => {
 
       // Right: Periods with Pride
       doc.font("Times-Italic").fontSize(26).fillColor("#e11d48")
-        .text("Periods with Pride ♡", pageWidth - marginX - 220, currentY + 4, { align: "right", width: 220 });
+        .text("Periods with Pride", pageWidth - marginX - 220, currentY + 4, { align: "right", width: 220 });
       doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#64748b")
         .text("HEALTHIER GIRLS • BRIGHTER TOMORROWS", pageWidth - marginX - 220, currentY + 36, { align: "right", width: 220 });
 
@@ -175,7 +175,7 @@ export const generatePdfKitInvoice = (order) => {
       const cardHeight = 84;
 
       const customerName = order.shippingDetails?.fullName || order.user?.name || "Customer";
-      const customerPhone = order.shippingDetails?.phone || "+91 98765 43210";
+      const customerPhone = order.shippingDetails?.phone || "+91 8079037352";
       const customerEmail = order.user?.email || order.shippingDetails?.email || "customer@example.com";
       const addressLine = order.shippingDetails?.address || "Address details";
       const cityZip = `${order.shippingDetails?.city || "New Delhi"} - ${order.shippingDetails?.zip || "110001"}`;
@@ -294,7 +294,7 @@ export const generatePdfKitInvoice = (order) => {
 
       // Left: Thank You message
       doc.font("Times-Italic").fontSize(30).fillColor("#e11d48")
-        .text("Thank you ♡", marginX, currentY);
+        .text("Thank you", marginX, currentY);
       doc.font("Helvetica-Bold").fontSize(13).fillColor("#0f172a")
         .text("for choosing niela!", marginX, currentY + 34);
       doc.font("Helvetica").fontSize(9).fillColor("#475569")
