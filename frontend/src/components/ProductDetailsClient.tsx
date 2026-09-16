@@ -69,7 +69,14 @@ function ProductNotFound() {
 function ProductDetailsInner({ product }: { product: Product }) {
   const { products, addToCart, toggleWishlist, isInWishlist } = useShop();
 
-  const [activeImage, setActiveImage] = useState(product.images[0]);
+  const [activeImage, setActiveImage] = useState(() => {
+    const initialVariant = product.variants && product.variants.length > 0 ? product.variants[0] : "Regular";
+    if (product.variantImages && product.variantImages[initialVariant]) {
+      return product.variantImages[initialVariant];
+    }
+    return product.images && product.images.length > 0 ? product.images[0] : "/images/regular_pads.png";
+  });
+
   const [selectedVariant, setSelectedVariant] = useState(
     product.variants && product.variants.length > 0 ? product.variants[0] : "Regular"
   );
@@ -77,17 +84,26 @@ function ProductDetailsInner({ product }: { product: Product }) {
   const [activeTab, setActiveTab] = useState("features");
   const [isAdding, setIsAdding] = useState(false);
 
+  const handleSelectVariant = (v: string) => {
+    setSelectedVariant(v);
+    if (product.variantImages && product.variantImages[v]) {
+      setActiveImage(product.variantImages[v]);
+    }
+  };
+
   // Sync state if product changes (e.g., after edit in admin panel)
   useEffect(() => {
     if (product) {
-      if (product.images && product.images.length > 0 && !product.images.includes(activeImage)) {
+      if (product.variantImages && product.variantImages[selectedVariant]) {
+        setActiveImage(product.variantImages[selectedVariant]);
+      } else if (product.images && product.images.length > 0 && !product.images.includes(activeImage)) {
         setActiveImage(product.images[0]);
       }
       if (product.variants && product.variants.length > 0 && !product.variants.includes(selectedVariant)) {
         setSelectedVariant(product.variants[0] || "Regular");
       }
     }
-  }, [product, activeImage, selectedVariant]);
+  }, [product]);
 
   const favorited = isInWishlist(product._id);
   const otherProducts = products.filter((p) => p._id !== product._id).slice(0, 3);
@@ -214,7 +230,7 @@ function ProductDetailsInner({ product }: { product: Product }) {
                       {product.variants.map((v) => (
                         <button
                           key={v}
-                          onClick={() => setSelectedVariant(v)}
+                          onClick={() => handleSelectVariant(v)}
                           className={`px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition ${
                             selectedVariant === v
                               ? "bg-brand-navy border-brand-navy text-white"

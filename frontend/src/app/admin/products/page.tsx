@@ -32,6 +32,7 @@ export default function AdminProductsCrudPage() {
   const [features, setFeatures] = useState(""); // Newline-separated string
   const [variantPrices, setVariantPrices] = useState<{ [key: string]: number }>({});
   const [variantOriginalPrices, setVariantOriginalPrices] = useState<{ [key: string]: number }>({});
+  const [variantImages, setVariantImages] = useState<{ [key: string]: string }>({});
   const [showOnHome, setShowOnHome] = useState(false);
 
   const handleOpenCreate = () => {
@@ -50,6 +51,7 @@ export default function AdminProductsCrudPage() {
     setFeatures("100% Certified Organic Cotton Top Sheet\nUltra-thin (1mm) design\nHighly breathable sheet\nHypoallergenic & free from toxins");
     setVariantPrices({});
     setVariantOriginalPrices({});
+    setVariantImages({});
     setShowOnHome(false);
     setIsModalOpen(true);
   };
@@ -70,6 +72,7 @@ export default function AdminProductsCrudPage() {
     setFeatures(p.features ? p.features.join("\n") : "");
     setVariantPrices(p.variantPrices || {});
     setVariantOriginalPrices(p.variantOriginalPrices || {});
+    setVariantImages(p.variantImages || {});
     setShowOnHome(p.showOnHome !== undefined ? Boolean(p.showOnHome) : false);
     setIsModalOpen(true);
   };
@@ -170,12 +173,14 @@ export default function AdminProductsCrudPage() {
     const variantsArray = variants.split(",").map(v => v.trim()).filter(Boolean);
     const featuresArray = features.split("\n").map(f => f.trim()).filter(Boolean);
 
-    // Clean up variant prices to only keep defined ones matching active variants
+    // Clean up variant prices and images to only keep defined ones matching active variants
     const cleanedPrices: { [key: string]: number } = {};
     const cleanedOriginalPrices: { [key: string]: number } = {};
+    const cleanedVariantImages: { [key: string]: string } = {};
     variantsArray.forEach((v) => {
       if (variantPrices[v] && variantPrices[v] > 0) cleanedPrices[v] = variantPrices[v];
       if (variantOriginalPrices[v] && variantOriginalPrices[v] > 0) cleanedOriginalPrices[v] = variantOriginalPrices[v];
+      if (variantImages[v]) cleanedVariantImages[v] = variantImages[v];
     });
 
     if (editingProduct) {
@@ -200,6 +205,7 @@ export default function AdminProductsCrudPage() {
         dbId: targetDbId,
         variantPrices: cleanedPrices,
         variantOriginalPrices: cleanedOriginalPrices,
+        variantImages: cleanedVariantImages,
         showOnHome: Boolean(showOnHome),
       };
 
@@ -229,6 +235,7 @@ export default function AdminProductsCrudPage() {
           slug: targetSlug,
           variantPrices: cleanedPrices,
           variantOriginalPrices: cleanedOriginalPrices,
+          variantImages: cleanedVariantImages,
           showOnHome: Boolean(showOnHome),
         });
         showToast("Product & pricing updated successfully in database!");
@@ -256,6 +263,7 @@ export default function AdminProductsCrudPage() {
         features: featuresArray,
         variantPrices: cleanedPrices,
         variantOriginalPrices: cleanedOriginalPrices,
+        variantImages: cleanedVariantImages,
         showOnHome: Boolean(showOnHome),
       };
 
@@ -277,6 +285,7 @@ export default function AdminProductsCrudPage() {
           slug: generatedSlug,
           variantPrices: cleanedPrices,
           variantOriginalPrices: cleanedOriginalPrices,
+          variantImages: cleanedVariantImages,
           showOnHome: Boolean(showOnHome),
         });
         if (created && created._id) {
@@ -715,7 +724,7 @@ export default function AdminProductsCrudPage() {
                 <div className="space-y-2.5 border border-brand-border/60 rounded-2xl p-4 bg-brand-bg/30">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wider text-brand-navy block">
-                      💰 Set Different Prices per Variant (Optional)
+                      💰 Set Prices &amp; Images per Variant (वैरिएंट के दाम और फोटो)
                     </span>
                     <button
                       type="button"
@@ -741,43 +750,128 @@ export default function AdminProductsCrudPage() {
                   </div>
                   <div className="space-y-3">
                     {variants.split(",").map(v => v.trim()).filter(Boolean).map((vName) => (
-                      <div key={vName} className="grid grid-cols-3 gap-2 items-center">
-                        <span className="text-xs font-semibold text-brand-navy truncate" title={vName}>
-                          {vName}
-                        </span>
-                        <div>
-                          <span className="text-[9px] uppercase font-bold text-brand-slate block mb-0.5">Sale Price (₹)</span>
-                          <input
-                            type="number"
-                            placeholder={price ? `${price}` : "Price"}
-                            value={variantPrices[vName] || ""}
-                            onChange={(e) => {
-                              setVariantOriginalPrices({
-                                ...variantOriginalPrices,
-                                [vName]: variantOriginalPrices[vName] || originalPrice
-                              });
-                              setVariantPrices({
-                                ...variantPrices,
-                                [vName]: Number(e.target.value) || 0
-                              });
-                            }}
-                            className="w-full border border-brand-border rounded-xl px-3 py-1.5 text-xs text-brand-navy focus:outline-none focus:border-brand-pink"
-                          />
+                      <div key={vName} className="p-3 bg-white border border-brand-border/60 rounded-xl space-y-2.5 shadow-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-brand-navy flex items-center gap-1.5">
+                            🏷️ {vName}
+                          </span>
+                          {variantImages[vName] ? (
+                            <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                              ✓ Custom Photo Set
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-brand-slate">Uses default image</span>
+                          )}
                         </div>
-                        <div>
-                          <span className="text-[9px] uppercase font-bold text-brand-slate block mb-0.5">Original (₹)</span>
-                          <input
-                            type="number"
-                            placeholder={originalPrice ? `${originalPrice}` : "Original"}
-                            value={variantOriginalPrices[vName] || ""}
-                            onChange={(e) => {
-                              setVariantOriginalPrices({
-                                ...variantOriginalPrices,
-                                [vName]: Number(e.target.value) || 0
-                              });
-                            }}
-                            className="w-full border border-brand-border rounded-xl px-3 py-1.5 text-xs text-brand-navy focus:outline-none focus:border-brand-pink"
-                          />
+
+                        {/* Price Row */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-[9px] uppercase font-bold text-brand-slate block mb-0.5">Sale Price (₹)</span>
+                            <input
+                              type="number"
+                              placeholder={price ? `${price}` : "Price"}
+                              value={variantPrices[vName] || ""}
+                              onChange={(e) => {
+                                setVariantOriginalPrices({
+                                  ...variantOriginalPrices,
+                                  [vName]: variantOriginalPrices[vName] || originalPrice
+                                });
+                                setVariantPrices({
+                                  ...variantPrices,
+                                  [vName]: Number(e.target.value) || 0
+                                });
+                              }}
+                              className="w-full border border-brand-border rounded-xl px-3 py-1.5 text-xs text-brand-navy focus:outline-none focus:border-brand-pink"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[9px] uppercase font-bold text-brand-slate block mb-0.5">Original (₹)</span>
+                            <input
+                              type="number"
+                              placeholder={originalPrice ? `${originalPrice}` : "Original"}
+                              value={variantOriginalPrices[vName] || ""}
+                              onChange={(e) => {
+                                setVariantOriginalPrices({
+                                  ...variantOriginalPrices,
+                                  [vName]: Number(e.target.value) || 0
+                                });
+                              }}
+                              className="w-full border border-brand-border rounded-xl px-3 py-1.5 text-xs text-brand-navy focus:outline-none focus:border-brand-pink"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Variant Image Selector Row */}
+                        <div className="pt-2 border-t border-brand-border/40">
+                          <span className="text-[10px] uppercase font-bold text-brand-slate block mb-1">
+                            🖼️ Variant Image (इस वैरिएंट की फोटो)
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {/* Preview Thumbnail */}
+                            <div className="w-10 h-10 rounded-lg border border-brand-border/60 overflow-hidden bg-brand-bg flex-shrink-0 flex items-center justify-center">
+                              {variantImages[vName] ? (
+                                <img src={variantImages[vName]} alt={vName} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-gray-300 text-[9px] text-center px-1">Default</span>
+                              )}
+                            </div>
+
+                            {/* Dropdown to select from product gallery */}
+                            <select
+                              value={variantImages[vName] || ""}
+                              onChange={(e) => {
+                                setVariantImages({
+                                  ...variantImages,
+                                  [vName]: e.target.value,
+                                });
+                              }}
+                              className="flex-grow border border-brand-border rounded-xl px-2.5 py-1.5 text-xs text-brand-navy focus:outline-none focus:border-brand-pink bg-white truncate"
+                            >
+                              <option value="">-- Default (First Image) --</option>
+                              {images.filter(Boolean).map((imgUrl, imgIdx) => (
+                                <option key={imgIdx} value={imgUrl}>
+                                  Image {imgIdx + 1}: {imgUrl.startsWith("data:") ? "Uploaded Image" : imgUrl.slice(-25)}
+                                </option>
+                              ))}
+                            </select>
+
+                            {/* Upload button for this variant */}
+                            <label className="cursor-pointer bg-brand-navy/5 hover:bg-brand-navy hover:text-white text-brand-navy text-[11px] font-semibold px-2.5 py-1.5 rounded-xl border border-brand-border/60 transition flex-shrink-0" title="Upload new photo for this variant">
+                              <span>Upload</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  const url = await uploadFileToServer(file);
+                                  if (url) {
+                                    setImages((prev) => (prev.includes(url) ? prev : [...prev, url]));
+                                    setVariantImages((prev) => ({ ...prev, [vName]: url }));
+                                    showToast(`Image set for ${vName}!`);
+                                  }
+                                  e.target.value = "";
+                                }}
+                              />
+                            </label>
+
+                            {variantImages[vName] && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = { ...variantImages };
+                                  delete updated[vName];
+                                  setVariantImages(updated);
+                                }}
+                                className="text-red-400 hover:text-red-600 p-1"
+                                title="Reset to default image"
+                              >
+                                <FiX className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}

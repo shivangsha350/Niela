@@ -84,6 +84,7 @@ router.post("/products", protect, admin, async (req, res) => {
     slug,
     variantPrices,
     variantOriginalPrices,
+    variantImages,
     showOnHome,
   } = req.body;
 
@@ -101,6 +102,7 @@ router.post("/products", protect, admin, async (req, res) => {
       slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
       variantPrices: variantPrices || {},
       variantOriginalPrices: variantOriginalPrices || {},
+      variantImages: variantImages || {},
       showOnHome: Boolean(showOnHome),
     });
     const createdProduct = await product.save();
@@ -126,6 +128,7 @@ router.put("/products/:id", protect, admin, async (req, res) => {
     slug,
     variantPrices,
     variantOriginalPrices,
+    variantImages,
     showOnHome,
   } = req.body;
 
@@ -157,6 +160,7 @@ router.put("/products/:id", protect, admin, async (req, res) => {
       if (slug) product.slug = slug;
       if (variantPrices !== undefined) product.variantPrices = variantPrices;
       if (variantOriginalPrices !== undefined) product.variantOriginalPrices = variantOriginalPrices;
+      if (variantImages !== undefined) product.variantImages = variantImages;
       if (showOnHome !== undefined) product.showOnHome = Boolean(showOnHome);
 
       const updatedProduct = await product.save();
@@ -176,6 +180,7 @@ router.put("/products/:id", protect, admin, async (req, res) => {
         slug: slug || req.params.id,
         variantPrices: variantPrices || {},
         variantOriginalPrices: variantOriginalPrices || {},
+        variantImages: variantImages || {},
         showOnHome: Boolean(showOnHome),
       });
       const saved = await newProduct.save();

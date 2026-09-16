@@ -22,6 +22,7 @@ export interface Product {
   variants?: string[]; // e.g., ["Regular", "Super", "Super Plus"]
   variantPrices?: { [variantName: string]: number };
   variantOriginalPrices?: { [variantName: string]: number };
+  variantImages?: { [variantName: string]: string };
   showOnHome?: boolean;
 }
 
@@ -119,6 +120,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
               variants: item.variants || [],
               variantPrices: item.variantPrices || {},
               variantOriginalPrices: item.variantOriginalPrices || {},
+              variantImages: item.variantImages || {},
               showOnHome: item.showOnHome !== undefined ? Boolean(item.showOnHome) : false,
             }));
             setProducts(liveList);
