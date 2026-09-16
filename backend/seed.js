@@ -29,7 +29,8 @@ const products = [
       "Highly breathable sheet prevents moisture build-up",
       "Hypoallergenic & free from toxins, chlorine, or synthetic dyes"
     ],
-    variants: ["24 Pack", "48 Pack"]
+    variants: ["24 Pack", "48 Pack"],
+    showOnHome: true
   },
   {
     name: "Niela Organic Cotton Pads",
@@ -47,7 +48,8 @@ const products = [
       "Double wings and contoured fit prevent side leakages",
       "Dermatologically tested and approved for sensitive skin"
     ],
-    variants: ["Regular (14 Pack)", "Super (12 Pack)", "Super Plus (10 Pack)"]
+    variants: ["Regular (14 Pack)", "Super (12 Pack)", "Super Plus (10 Pack)"],
+    showOnHome: true
   },
   {
     name: "The Niela Starter Kit",
@@ -65,7 +67,8 @@ const products = [
       "1 Medical-Grade Menstrual Cup (Size Small)",
       "1 Reusable organic cotton drawstring canvas bag"
     ],
-    variants: ["Small Cup Kit", "Medium Cup Kit", "Large Cup Kit"]
+    variants: ["Small Cup Kit", "Medium Cup Kit", "Large Cup Kit"],
+    showOnHome: true
   },
   {
     name: "Niela Medical-Grade Menstrual Cup",
@@ -83,7 +86,8 @@ const products = [
       "Flexible and velvety-smooth for a seamless, comfortable fit",
       "Eco-friendly choice reusable for up to 5-10 years"
     ],
-    variants: ["Small (Pre-childbirth)", "Large (Post-childbirth)"]
+    variants: ["Small (Pre-childbirth)", "Large (Post-childbirth)"],
+    showOnHome: true
   }
 ];
 

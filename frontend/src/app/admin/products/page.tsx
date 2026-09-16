@@ -32,6 +32,7 @@ export default function AdminProductsCrudPage() {
   const [features, setFeatures] = useState(""); // Newline-separated string
   const [variantPrices, setVariantPrices] = useState<{ [key: string]: number }>({});
   const [variantOriginalPrices, setVariantOriginalPrices] = useState<{ [key: string]: number }>({});
+  const [showOnHome, setShowOnHome] = useState(false);
 
   const handleOpenCreate = () => {
     setEditingProduct(null);
@@ -49,6 +50,7 @@ export default function AdminProductsCrudPage() {
     setFeatures("100% Certified Organic Cotton Top Sheet\nUltra-thin (1mm) design\nHighly breathable sheet\nHypoallergenic & free from toxins");
     setVariantPrices({});
     setVariantOriginalPrices({});
+    setShowOnHome(false);
     setIsModalOpen(true);
   };
 
@@ -68,6 +70,7 @@ export default function AdminProductsCrudPage() {
     setFeatures(p.features ? p.features.join("\n") : "");
     setVariantPrices(p.variantPrices || {});
     setVariantOriginalPrices(p.variantOriginalPrices || {});
+    setShowOnHome(p.showOnHome !== undefined ? Boolean(p.showOnHome) : false);
     setIsModalOpen(true);
   };
 
@@ -176,7 +179,8 @@ export default function AdminProductsCrudPage() {
         slug: targetSlug,
         dbId: targetDbId,
         variantPrices: cleanedPrices,
-        variantOriginalPrices: cleanedOriginalPrices
+        variantOriginalPrices: cleanedOriginalPrices,
+        showOnHome: Boolean(showOnHome),
       };
 
       const updatedList = products.map((p) =>
@@ -204,7 +208,8 @@ export default function AdminProductsCrudPage() {
           features: featuresArray,
           slug: targetSlug,
           variantPrices: cleanedPrices,
-          variantOriginalPrices: cleanedOriginalPrices
+          variantOriginalPrices: cleanedOriginalPrices,
+          showOnHome: Boolean(showOnHome),
         });
         showToast("Product & pricing updated successfully in database!");
       } catch (err: any) {
@@ -230,7 +235,8 @@ export default function AdminProductsCrudPage() {
         variants: variantsArray,
         features: featuresArray,
         variantPrices: cleanedPrices,
-        variantOriginalPrices: cleanedOriginalPrices
+        variantOriginalPrices: cleanedOriginalPrices,
+        showOnHome: Boolean(showOnHome),
       };
 
       updateProductsList([...products, newProduct]);
@@ -250,7 +256,8 @@ export default function AdminProductsCrudPage() {
           features: featuresArray,
           slug: generatedSlug,
           variantPrices: cleanedPrices,
-          variantOriginalPrices: cleanedOriginalPrices
+          variantOriginalPrices: cleanedOriginalPrices,
+          showOnHome: Boolean(showOnHome),
         });
         if (created && created._id) {
           newProduct.dbId = created._id;
@@ -276,6 +283,36 @@ export default function AdminProductsCrudPage() {
       } catch (err: any) {
         console.warn("Backend delete notice:", err.message);
       }
+    }
+  };
+
+  const handleToggleShowOnHome = async (p: Product) => {
+    const newShowOnHome = !p.showOnHome;
+    const targetSlug = p.slug || p._id;
+    const targetDbId = p.dbId || p._id;
+
+    const updatedList = products.map((item) =>
+      item._id === p._id || (item.dbId && item.dbId === targetDbId) || (item.slug && item.slug === targetSlug)
+        ? { ...item, showOnHome: newShowOnHome }
+        : item
+    );
+
+    updateProductsList(updatedList);
+
+    try {
+      await apiService.admin.updateProduct(targetDbId, { showOnHome: newShowOnHome });
+      showToast(
+        newShowOnHome
+          ? `"${p.name}" will now appear on the Home Page! 🏠`
+          : `"${p.name}" removed from Home Page.`
+      );
+    } catch (err: any) {
+      console.warn("Backend update notice:", err.message);
+      showToast(
+        newShowOnHome
+          ? `"${p.name}" set to show on Home Page!`
+          : `"${p.name}" removed from Home Page.`
+      );
     }
   };
 
@@ -318,6 +355,7 @@ export default function AdminProductsCrudPage() {
               <th className="py-4">Category</th>
               <th className="py-4">Base Price</th>
               <th className="py-4">Stock Status</th>
+              <th className="py-4 text-center">Home Page</th>
               <th className="py-4">Rating</th>
               <th className="py-4 text-right pr-6">Actions</th>
             </tr>
@@ -348,6 +386,34 @@ export default function AdminProductsCrudPage() {
                       Out of Stock
                     </span>
                   )}
+                </td>
+                <td className="py-3 text-center">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleShowOnHome(p)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition shadow-sm ${
+                      p.showOnHome
+                        ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                        : "bg-gray-100 hover:bg-gray-200 text-gray-600"
+                    }`}
+                    title={
+                      p.showOnHome
+                        ? "Currently shown on Homepage (Click to hide)"
+                        : "Hidden from Homepage (Click to show)"
+                    }
+                  >
+                    {p.showOnHome ? (
+                      <>
+                        <FiCheck className="w-3.5 h-3.5" />
+                        <span>On Home</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-gray-400 font-bold">+</span>
+                        <span>Off</span>
+                      </>
+                    )}
+                  </button>
                 </td>
                 <td className="py-3 text-brand-navy font-semibold">{p.rating || "5.0"} ⭐ ({p.reviewsCount || 0})</td>
                 <td className="py-3 text-right pr-6">
@@ -508,6 +574,33 @@ export default function AdminProductsCrudPage() {
                     className="w-full border border-brand-border rounded-xl px-4 py-2.5 text-brand-navy focus:outline-none focus:border-brand-pink"
                   />
                 </div>
+              </div>
+
+              {/* Home Page Featured Toggle */}
+              <div className="flex items-center justify-between p-3.5 bg-brand-bg/50 border border-brand-border/60 rounded-2xl">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-brand-navy block">
+                    Show on Home Page (होम पेज पर दिखाएं)
+                  </label>
+                  <p className="text-[11px] text-brand-slate">
+                    Display this product in the &ldquo;Our Bestsellers&rdquo; section on the homepage.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowOnHome(!showOnHome)}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    showOnHome ? "bg-emerald-500" : "bg-gray-300"
+                  }`}
+                  role="switch"
+                  aria-checked={showOnHome}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      showOnHome ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
               </div>
 
               <div className="space-y-2">

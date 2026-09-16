@@ -8,8 +8,20 @@ import { FiArrowRight } from "react-icons/fi";
 
 export default function ProductGrid() {
   const { products } = useShop();
-  // Show all products in the grid
-  const displayedProducts = products.slice(0, 4);
+
+  // Show products marked for Home Page from Admin Panel
+  // Fallback to first 4 products if none are explicitly marked
+  const homeProducts = products.filter((p) => p.showOnHome === true);
+  const displayedProducts = homeProducts.length > 0 ? homeProducts : products.slice(0, 4);
+
+  const gridColsClass =
+    displayedProducts.length === 1
+      ? "grid grid-cols-1 max-w-sm mx-auto gap-6"
+      : displayedProducts.length === 2
+      ? "grid grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto gap-6 sm:gap-8"
+      : displayedProducts.length === 3
+      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto gap-6 sm:gap-8"
+      : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8";
 
   return (
     <section className="w-full py-16 sm:py-24 bg-brand-bg">
@@ -28,7 +40,7 @@ export default function ProductGrid() {
         </div>
 
         {/* Catalog Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+        <div className={gridColsClass}>
           {displayedProducts.map((product) => (
             <ProductCard key={product._id} product={product} />
           ))}

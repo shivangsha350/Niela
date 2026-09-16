@@ -11,13 +11,16 @@ const router = express.Router();
 // ==========================================
 
 // @route   GET /api/products
-// @desc    Get all products (supports category filter)
+// @desc    Get all products (supports category and showOnHome filter)
 router.get("/products", async (req, res) => {
-  const { category } = req.query;
+  const { category, showOnHome } = req.query;
   try {
     let query = {};
     if (category && category !== "all") {
       query.category = category.toLowerCase();
+    }
+    if (showOnHome !== undefined) {
+      query.showOnHome = showOnHome === "true";
     }
     const products = await Product.find(query);
     res.json(products);
@@ -81,6 +84,7 @@ router.post("/products", protect, admin, async (req, res) => {
     slug,
     variantPrices,
     variantOriginalPrices,
+    showOnHome,
   } = req.body;
 
   try {
@@ -97,6 +101,7 @@ router.post("/products", protect, admin, async (req, res) => {
       slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
       variantPrices: variantPrices || {},
       variantOriginalPrices: variantOriginalPrices || {},
+      showOnHome: Boolean(showOnHome),
     });
     const createdProduct = await product.save();
     res.status(201).json(createdProduct);
@@ -121,6 +126,7 @@ router.put("/products/:id", protect, admin, async (req, res) => {
     slug,
     variantPrices,
     variantOriginalPrices,
+    showOnHome,
   } = req.body;
 
   try {
@@ -151,6 +157,7 @@ router.put("/products/:id", protect, admin, async (req, res) => {
       if (slug) product.slug = slug;
       if (variantPrices !== undefined) product.variantPrices = variantPrices;
       if (variantOriginalPrices !== undefined) product.variantOriginalPrices = variantOriginalPrices;
+      if (showOnHome !== undefined) product.showOnHome = Boolean(showOnHome);
 
       const updatedProduct = await product.save();
       res.json(updatedProduct);
@@ -169,6 +176,7 @@ router.put("/products/:id", protect, admin, async (req, res) => {
         slug: slug || req.params.id,
         variantPrices: variantPrices || {},
         variantOriginalPrices: variantOriginalPrices || {},
+        showOnHome: Boolean(showOnHome),
       });
       const saved = await newProduct.save();
       res.status(201).json(saved);
