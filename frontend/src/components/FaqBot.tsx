@@ -11,6 +11,54 @@ type Faq = {
   answer: string;
 };
 
+// ---- Small talk (checked before FAQs) ----
+function trySmallTalk(input: string): string | null {
+  const text = input.toLowerCase().trim();
+
+  if (/\b(hi|hii|hiii|hello|hey|namaste|hola|hy)\b/.test(text)) {
+    return "Hello! How can I help you?";
+  }
+
+  if (/\b(ur|your|u r)\s*name\b|tumhara naam|aapka naam|apna naam/.test(text)) {
+    return "My name is Reena.";
+  }
+
+  if (/how are (you|u)|kaise ho|kaisi ho/.test(text)) {
+    return "I'm doing great, thanks for asking! How can I help you today?";
+  }
+
+  if (/\b(day|which day)\b/.test(text) && !/deliver|delivery/.test(text)) {
+    const day = new Date().toLocaleDateString("en-IN", { weekday: "long" });
+    return `Today is ${day}.`;
+  }
+
+  if (/\bdate\b|\btoday'?s date\b/.test(text)) {
+    const date = new Date().toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    return `Today's date is ${date}.`;
+  }
+
+  if (/\btime\b/.test(text)) {
+    const time = new Date().toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `It's ${time} right now.`;
+  }
+
+  if (/\b(bye|goodbye|see you|tata)\b/.test(text)) {
+    return "Bye! Take care 💜 Come back anytime you have questions.";
+  }
+
+  if (/\bthank(s| you)\b|\bthanku\b|\bdhanyavad\b/.test(text)) {
+    return "You're welcome! Anything else I can help with?";
+  }
+
+  return null;
+}
 const FAQS: Faq[] = [
   {
     keywords: ["certified", "certificate", "certification", "quality", "standard"],
@@ -71,6 +119,11 @@ const FAQS: Faq[] = [
     keywords: ["contact", "email", "phone", "support", "reach", "help", "human", "agent", "talk"],
     question: "How do I contact Niela?",
     answer: "Email us at support@nielacare.com or call +91 80790 37352.",
+  },
+  {
+    keywords: ["who made", "who built", "developer", "developed", "website made", "biteburst"],
+    question: "Who made this website?",
+    answer: "This website was built by Biteburst, owned by Shivang and Shubham. Contact: +91 92146 77888.",
   },
   {
     keywords: ["company", "who", "owner", "poiya", "about", "niela", "brand"],
@@ -148,6 +201,9 @@ const FALLBACK =
   "I'm not sure about that one — try asking about shipping, returns, sizes, materials, or payment. Or email support@nielacare.com.";
 
 function findAnswer(input: string): string {
+  const smallTalk = trySmallTalk(input);
+  if (smallTalk) return smallTalk;
+
   const text = input.toLowerCase();
   let best: Faq | null = null;
   let bestScore = 0;
@@ -167,7 +223,7 @@ function findAnswer(input: string): string {
 export default function FaqBot() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { from: "bot", text: "Hi! Ask me about shipping, sizes, returns, or anything else about Niela." },
+    { from: "bot", text: "Hi, my name is Reena! Ask me about shipping, sizes, returns, or anything else about Niela." },
   ]);
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);

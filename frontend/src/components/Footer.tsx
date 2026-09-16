@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { FaInstagram, FaFacebookF, FaTwitter } from "react-icons/fa";
+import { FaInstagram, FaFacebookF, FaTwitter, FaYoutube } from "react-icons/fa";
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
@@ -35,8 +35,8 @@ export default function Footer() {
               <a href="https://www.facebook.com/share/19HpLVHNsw/" className="p-2 bg-white/5 rounded-full hover:bg-brand-pink hover:text-white transition duration-200" aria-label="Facebook">
                 <FaFacebookF className="w-4 h-4" />
               </a>
-              <a href="#" className="p-2 bg-white/5 rounded-full hover:bg-brand-pink hover:text-white transition duration-200" aria-label="Twitter">
-                <FaTwitter className="w-4 h-4" />
+              <a href="#" className="p-2 bg-white/5 rounded-full hover:bg-brand-pink hover:text-white transition duration-200" aria-label="Youtube">
+                <FaYoutube className="w-4 h-4" />
               </a>
             </div>
           </div>
