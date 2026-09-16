@@ -24,7 +24,7 @@ const slides = [
     ctaText: "Explore Starter Kits",
     ctaLink: "/products?category=kits",
     bgClass: "bg-emerald-50/40",
-    imgSrc: "/images/CupImage.png"
+    imgSrc: "/images/CupsImage.png"
   },
   {
     id: 3,
@@ -44,7 +44,7 @@ const slides = [
     ctaText: "See Certifications",
     ctaLink: "/about#certifications",
     bgClass: "bg-emerald-50/40",
-    imgSrc: "/images/sliderKit.png"
+    imgSrc: "/images/SliderKit.png"
   }
 ];
 
