@@ -140,28 +140,28 @@ function ProductDetailsInner({ product }: { product: Product }) {
           {/* Product Info Block */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 bg-white p-6 sm:p-10 border border-brand-border/60 rounded-3xl shadow-sm mb-16">
             
-            {/* Gallery Panel */}
+            {/* Gallery Panel - 1:1 Standard 1024x1024 Square Presentation */}
             <div className="space-y-4">
-              <div className="w-full aspect-square bg-brand-bg border border-brand-border/40 rounded-2xl overflow-hidden relative">
+              <div className="w-full aspect-square bg-white border border-brand-border/60 rounded-3xl overflow-hidden relative flex items-center justify-center p-4 sm:p-6 shadow-xs">
                 <img
                   src={activeImage}
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain transition-all duration-300"
                 />
               </div>
               {/* Thumbnails Row */}
-              <div className="flex gap-3">
+              <div className="flex gap-3 overflow-x-auto pb-1">
                 {product.images.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveImage(img)}
-                    className={`w-20 h-20 bg-brand-bg border rounded-xl overflow-hidden transition ${
+                    className={`w-20 h-20 bg-white border rounded-2xl overflow-hidden p-1.5 transition flex-shrink-0 flex items-center justify-center ${
                       activeImage === img
-                        ? "border-brand-pink ring-2 ring-brand-pink/20"
-                        : "border-brand-border hover:border-brand-pink"
+                        ? "border-brand-pink ring-2 ring-brand-pink/20 shadow-xs"
+                        : "border-brand-border/60 hover:border-brand-pink"
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <img src={img} alt="" className="w-full h-full object-contain" />
                   </button>
                 ))}
               </div>

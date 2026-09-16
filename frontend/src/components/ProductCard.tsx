@@ -54,11 +54,11 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       <Link href={`/products/${product._id}`} className="block flex-1 flex flex-col">
         {/* Product Image - 1:1 Standard Square (1024x1024) */}
-        <div className="w-full aspect-square bg-brand-bg relative overflow-hidden group-hover:opacity-95 transition-opacity">
+        <div className="w-full aspect-square bg-white relative overflow-hidden group-hover:opacity-95 transition-opacity flex items-center justify-center p-3 sm:p-4">
           <img
             src={product.images[0]}
             alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
           />
           {product.originalPrice && product.originalPrice > product.price && product.stock > 0 && (
             <span className="absolute bottom-4 left-4 bg-brand-pink text-white text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full">

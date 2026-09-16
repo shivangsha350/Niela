@@ -335,8 +335,8 @@ export default function CheckoutPage() {
                   {cart.map((item) => (
                     <div key={`${item.product._id}-${item.selectedVariant}`} className="flex justify-between items-center text-xs gap-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 bg-brand-bg rounded-lg overflow-hidden flex-shrink-0">
-                          <img src={item.product.images[0]} alt="" className="w-full h-full object-cover" />
+                        <div className="w-10 h-10 bg-white border border-brand-border/50 rounded-lg overflow-hidden flex-shrink-0 p-0.5 flex items-center justify-center">
+                          <img src={item.product.images[0]} alt="" className="w-full h-full object-contain" />
                         </div>
                         <div className="min-w-0">
                           <p className="font-bold text-brand-navy truncate max-w-[140px]">{item.product.name}</p>

@@ -113,37 +113,32 @@ export default function AdminProductsCrudPage() {
       const img = new Image();
       img.src = base64Str;
       img.onload = () => {
+        const TARGET_SIZE = 1024;
         const canvas = document.createElement("canvas");
-        const MAX_WIDTH = 1400;
-        const MAX_HEIGHT = 1400;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = Math.round(width);
-        canvas.height = Math.round(height);
+        canvas.width = TARGET_SIZE;
+        canvas.height = TARGET_SIZE;
         const ctx = canvas.getContext("2d");
         if (ctx) {
+          // Fill pure white background for standard 1:1 e-commerce display
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillRect(0, 0, TARGET_SIZE, TARGET_SIZE);
+
+          // Standard 1:1 square contain fit (no cropping, no stretching, perfect crispness)
+          const scale = Math.min(TARGET_SIZE / img.width, TARGET_SIZE / img.height);
+          const drawWidth = img.width * scale;
+          const drawHeight = img.height * scale;
+          const dx = (TARGET_SIZE - drawWidth) / 2;
+          const dy = (TARGET_SIZE - drawHeight) / 2;
+
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = "high";
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, dx, dy, drawWidth, drawHeight);
         }
 
-        // Modern WebP format with 0.88 high quality
-        let dataUrl = canvas.toDataURL("image/webp", 0.88);
+        // Modern WebP format with 0.92 high quality (or JPEG fallback)
+        let dataUrl = canvas.toDataURL("image/webp", 0.92);
         if (!dataUrl.startsWith("data:image/webp")) {
-          dataUrl = canvas.toDataURL("image/jpeg", 0.88);
+          dataUrl = canvas.toDataURL("image/jpeg", 0.92);
         }
         resolve(dataUrl);
       };
@@ -393,8 +388,8 @@ export default function AdminProductsCrudPage() {
             {products.map((p) => (
               <tr key={p._id} className="hover:bg-brand-bg/40 transition">
                 <td className="py-3 px-6 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-brand-bg overflow-hidden border border-brand-border/40 flex-shrink-0">
-                    <img src={p.images[0] || "/images/regular_pads.png"} alt={p.name} className="w-full h-full object-cover" />
+                  <div className="w-11 h-11 rounded-xl bg-white overflow-hidden border border-brand-border/40 flex-shrink-0 p-0.5 flex items-center justify-center">
+                    <img src={p.images[0] || "/images/regular_pads.png"} alt={p.name} className="w-full h-full object-contain" />
                   </div>
                   <span className="font-semibold text-brand-navy max-w-xs truncate">{p.name}</span>
                 </td>
@@ -668,8 +663,8 @@ export default function AdminProductsCrudPage() {
                     <div className="flex flex-col gap-2">
                       {images.map((img, idx) => (
                         <div key={idx} className="flex gap-2 items-center bg-brand-bg/40 p-2 border border-brand-border/40 rounded-xl">
-                          <div className="relative w-12 h-12 rounded-lg border border-brand-border/40 overflow-hidden bg-brand-bg flex-shrink-0">
-                            <img src={img || "/images/regular_pads.png"} alt="preview" className="w-full h-full object-cover" />
+                          <div className="relative w-12 h-12 rounded-lg border border-brand-border/40 overflow-hidden bg-white flex-shrink-0 p-0.5 flex items-center justify-center">
+                            <img src={img || "/images/regular_pads.png"} alt="preview" className="w-full h-full object-contain" />
                           </div>
                           <input
                             type="text"
@@ -809,9 +804,9 @@ export default function AdminProductsCrudPage() {
                           </span>
                           <div className="flex items-center gap-2">
                             {/* Preview Thumbnail */}
-                            <div className="w-10 h-10 rounded-lg border border-brand-border/60 overflow-hidden bg-brand-bg flex-shrink-0 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-lg border border-brand-border/60 overflow-hidden bg-white flex-shrink-0 flex items-center justify-center p-0.5">
                               {variantImages[vName] ? (
-                                <img src={variantImages[vName]} alt={vName} className="w-full h-full object-cover" />
+                                <img src={variantImages[vName]} alt={vName} className="w-full h-full object-contain" />
                               ) : (
                                 <span className="text-gray-300 text-[9px] text-center px-1">Default</span>
                               )}
