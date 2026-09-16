@@ -53,8 +53,8 @@ export default function ProductCard({ product }: ProductCardProps) {
       </button>
 
       <Link href={`/products/${product._id}`} className="block flex-1 flex flex-col">
-        {/* Product Image */}
-        <div className="w-full aspect-[4/3] bg-brand-bg relative overflow-hidden group-hover:opacity-95 transition-opacity">
+        {/* Product Image - 1:1 Standard Square (1024x1024) */}
+        <div className="w-full aspect-square bg-brand-bg relative overflow-hidden group-hover:opacity-95 transition-opacity">
           <img
             src={product.images[0]}
             alt={product.name}

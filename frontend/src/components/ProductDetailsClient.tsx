@@ -126,7 +126,7 @@ function ProductDetailsInner({ product }: { product: Product }) {
             
             {/* Gallery Panel */}
             <div className="space-y-4">
-              <div className="w-full aspect-[4/3] bg-brand-bg border border-brand-border/40 rounded-2xl overflow-hidden relative">
+              <div className="w-full aspect-square bg-brand-bg border border-brand-border/40 rounded-2xl overflow-hidden relative">
                 <img
                   src={activeImage}
                   alt={product.name}

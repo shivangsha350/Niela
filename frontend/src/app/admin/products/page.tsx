@@ -74,9 +74,35 @@ export default function AdminProductsCrudPage() {
     setIsModalOpen(true);
   };
 
+  const uploadFileToServer = async (file: File): Promise<string> => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) return data.url;
+      }
+    } catch (e) {
+      console.warn("Direct upload failed, falling back to WebP compression:", e);
+    }
+
+    // Fallback to high-definition WebP compression
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const rawBase64 = event.target?.result as string;
+        compressImage(rawBase64).then(resolve);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const compressImage = (base64Str: string): Promise<string> => {
     return new Promise((resolve) => {
-      // If it's not a base64 data URI, bypass compression
       if (!base64Str.startsWith("data:image/")) {
         resolve(base64Str);
         return;
@@ -85,8 +111,8 @@ export default function AdminProductsCrudPage() {
       img.src = base64Str;
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const MAX_WIDTH = 500;
-        const MAX_HEIGHT = 500;
+        const MAX_WIDTH = 1400;
+        const MAX_HEIGHT = 1400;
         let width = img.width;
         let height = img.height;
 
@@ -102,13 +128,20 @@ export default function AdminProductsCrudPage() {
           }
         }
 
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = Math.round(width);
+        canvas.height = Math.round(height);
         const ctx = canvas.getContext("2d");
-        ctx?.drawImage(img, 0, 0, width, height);
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
 
-        // Convert to high compression JPEG
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
+        // Modern WebP format with 0.88 high quality
+        let dataUrl = canvas.toDataURL("image/webp", 0.88);
+        if (!dataUrl.startsWith("data:image/webp")) {
+          dataUrl = canvas.toDataURL("image/jpeg", 0.88);
+        }
         resolve(dataUrl);
       };
       img.onerror = () => {
@@ -117,27 +150,14 @@ export default function AdminProductsCrudPage() {
     });
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    // Process each selected file, convert to base64 and compress
-    const filePromises = Array.from(files).map((file) => {
-      return new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const rawBase64 = event.target?.result as string;
-          compressImage(rawBase64).then((compressedBase64) => {
-            resolve(compressedBase64);
-          });
-        };
-        reader.readAsDataURL(file);
-      });
-    });
-
-    Promise.all(filePromises).then((base64Strings) => {
-      setImages((prev) => [...prev, ...base64Strings]);
-    });
+    const fileList = Array.from(files);
+    const uploadedUrls = await Promise.all(fileList.map((f) => uploadFileToServer(f)));
+    setImages((prev) => [...prev, ...uploadedUrls.filter(Boolean)]);
+    e.target.value = "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
