@@ -14,7 +14,7 @@ const slides = [
     ctaText: "Shop the Collection",
     ctaLink: "/products",
     bgClass: "bg-brand-pink-light",
-    imgSrc: "/images/Slider2.png"
+    imgSrc: "/images/PinkBoX.png"
   },
   {
     id: 2,
@@ -24,7 +24,7 @@ const slides = [
     ctaText: "Explore Starter Kits",
     ctaLink: "/products?category=kits",
     bgClass: "bg-emerald-50/40",
-    imgSrc: "/images/Slider.png"
+    imgSrc: "/images/CupImage.png"
   },
   {
     id: 3,
@@ -44,7 +44,7 @@ const slides = [
     ctaText: "See Certifications",
     ctaLink: "/about#certifications",
     bgClass: "bg-emerald-50/40",
-    imgSrc: "/images/starter_kit.png"
+    imgSrc: "/images/sliderKit.png"
   }
 ];
 
