@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Product, useShop } from "@/context/ShopContext";
 import { apiService } from "@/services/api";
 import { FiPlus, FiEdit2, FiTrash2, FiX, FiCheck, FiRefreshCw } from "react-icons/fi";
 
 export default function AdminProductsCrudPage() {
-  const { products, updateProductsList } = useShop();
+  const { products, updateProductsList, refreshProducts, logoutUser } = useShop();
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -179,12 +181,11 @@ export default function AdminProductsCrudPage() {
     });
 
     if (editingProduct) {
-      // Update Action
-      const targetSlug = editingProduct.slug || editingProduct._id;
+      // Update Action - Target the real MongoDB ObjectId (dbId or _id)
       const targetDbId = editingProduct.dbId || editingProduct._id;
+      const targetSlug = editingProduct.slug || targetDbId;
 
-      const updatedProductObj: Product = {
-        ...editingProduct,
+      const payload = {
         name,
         description,
         price,
@@ -197,54 +198,49 @@ export default function AdminProductsCrudPage() {
         variants: variantsArray,
         features: featuresArray,
         slug: targetSlug,
-        dbId: targetDbId,
         variantPrices: cleanedPrices,
         variantOriginalPrices: cleanedOriginalPrices,
         variantImages: cleanedVariantImages,
         showOnHome: Boolean(showOnHome),
       };
 
-      const updatedList = products.map((p) =>
-        p._id === editingProduct._id || (p.dbId && p.dbId === targetDbId) || (p.slug && p.slug === targetSlug)
-          ? updatedProductObj
-          : p
-      );
-
-      // 1. Instantly update local store & trigger real-time cross-tab sync
-      updateProductsList(updatedList);
-
-      // 2. Persist to MongoDB Atlas backend API
       try {
-        await apiService.admin.updateProduct(targetDbId, {
-          name,
-          description,
-          price,
-          originalPrice: originalPrice || undefined,
-          stock: finalStock,
-          category,
-          images: imagesArray.length > 0 ? imagesArray : ["/images/regular_pads.png"],
-          rating: rating || 5.0,
-          reviewsCount: reviewsCount || 0,
-          variants: variantsArray,
-          features: featuresArray,
-          slug: targetSlug,
-          variantPrices: cleanedPrices,
-          variantOriginalPrices: cleanedOriginalPrices,
-          variantImages: cleanedVariantImages,
-          showOnHome: Boolean(showOnHome),
-        });
-        showToast("Product & pricing updated successfully in database!");
+        const updatedDoc = await apiService.admin.updateProduct(targetDbId, payload);
+
+        const updatedProductObj: Product = {
+          ...editingProduct,
+          ...payload,
+          _id: updatedDoc?._id ? String(updatedDoc._id) : targetDbId,
+          dbId: updatedDoc?._id ? String(updatedDoc._id) : targetDbId,
+          slug: updatedDoc?.slug || targetSlug,
+        };
+
+        const updatedList = products.map((p) =>
+          (p.dbId && p.dbId === targetDbId) || p._id === targetDbId || (p.slug && p.slug === targetSlug)
+            ? updatedProductObj
+            : p
+        );
+
+        // Update local store ONLY after backend confirms successful persistence
+        updateProductsList(updatedList);
+        await refreshProducts();
+        showToast("Product & pricing updated successfully in database!", "success");
+        setIsModalOpen(false);
       } catch (err: any) {
-        console.warn("Backend update notice:", err.message);
-        showToast("Price updated across website!");
+        console.error("Backend update error:", err);
+        const errMsg = err.response?.data?.message || err.message || "Failed to update product in database";
+        showToast(errMsg, "error");
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          logoutUser();
+          router.push("/admin/login");
+        }
+      } finally {
+        setIsSaving(false);
       }
     } else {
       // Create Action
       const generatedSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-      const tempId = `prod-${Math.floor(1000 + Math.random() * 9000)}`;
-      const newProduct: Product = {
-        _id: generatedSlug || tempId,
-        slug: generatedSlug,
+      const payload = {
         name,
         description,
         price,
@@ -256,87 +252,90 @@ export default function AdminProductsCrudPage() {
         reviewsCount: reviewsCount || 0,
         variants: variantsArray,
         features: featuresArray,
+        slug: generatedSlug,
         variantPrices: cleanedPrices,
         variantOriginalPrices: cleanedOriginalPrices,
         variantImages: cleanedVariantImages,
         showOnHome: Boolean(showOnHome),
       };
 
-      updateProductsList([...products, newProduct]);
-
       try {
-        const created = await apiService.admin.createProduct({
-          name,
-          description,
-          price,
-          originalPrice: originalPrice || undefined,
-          stock: finalStock,
-          category,
-          images: imagesArray.length > 0 ? imagesArray : ["/images/regular_pads.png"],
-          rating: rating || 5.0,
-          reviewsCount: reviewsCount || 0,
-          variants: variantsArray,
-          features: featuresArray,
-          slug: generatedSlug,
-          variantPrices: cleanedPrices,
-          variantOriginalPrices: cleanedOriginalPrices,
-          variantImages: cleanedVariantImages,
-          showOnHome: Boolean(showOnHome),
-        });
+        const created = await apiService.admin.createProduct(payload);
         if (created && created._id) {
-          newProduct.dbId = created._id;
+          const newProduct: Product = {
+            ...payload,
+            _id: String(created._id),
+            dbId: String(created._id),
+            slug: created.slug || generatedSlug,
+          };
+          updateProductsList([...products, newProduct]);
+          await refreshProducts();
+          showToast("New product created and saved to database!", "success");
+          setIsModalOpen(false);
+        } else {
+          throw new Error("Invalid response from server");
         }
-        showToast("New product created and saved to database!");
       } catch (err: any) {
-        console.warn("Backend create notice:", err.message);
-        showToast("Product created successfully!");
+        console.error("Backend create error:", err);
+        const errMsg = err.response?.data?.message || err.message || "Failed to create product in database";
+        showToast(errMsg, "error");
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          logoutUser();
+          router.push("/admin/login");
+        }
+      } finally {
+        setIsSaving(false);
       }
     }
-
-    setIsSaving(false);
-    setIsModalOpen(false);
   };
 
   const handleDelete = async (p: Product) => {
+    const targetId = p.dbId || p._id;
     if (confirm(`Are you sure you want to delete "${p.name}"?`)) {
-      const updatedList = products.filter((item) => item._id !== p._id && item.dbId !== p._id);
-      updateProductsList(updatedList);
       try {
-        await apiService.admin.deleteProduct(p.dbId || p._id);
-        showToast("Product deleted successfully!");
+        await apiService.admin.deleteProduct(targetId);
+        const updatedList = products.filter((item) => item._id !== p._id && item.dbId !== targetId && item._id !== targetId);
+        updateProductsList(updatedList);
+        await refreshProducts();
+        showToast("Product deleted successfully!", "success");
       } catch (err: any) {
-        console.warn("Backend delete notice:", err.message);
+        console.error("Backend delete error:", err);
+        const errMsg = err.response?.data?.message || err.message || "Failed to delete product";
+        showToast(errMsg, "error");
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          logoutUser();
+          router.push("/admin/login");
+        }
       }
     }
   };
 
   const handleToggleShowOnHome = async (p: Product) => {
     const newShowOnHome = !p.showOnHome;
-    const targetSlug = p.slug || p._id;
     const targetDbId = p.dbId || p._id;
-
-    const updatedList = products.map((item) =>
-      item._id === p._id || (item.dbId && item.dbId === targetDbId) || (item.slug && item.slug === targetSlug)
-        ? { ...item, showOnHome: newShowOnHome }
-        : item
-    );
-
-    updateProductsList(updatedList);
 
     try {
       await apiService.admin.updateProduct(targetDbId, { showOnHome: newShowOnHome });
+      const updatedList = products.map((item) =>
+        (item.dbId && item.dbId === targetDbId) || item._id === targetDbId || item._id === p._id
+          ? { ...item, showOnHome: newShowOnHome }
+          : item
+      );
+      updateProductsList(updatedList);
       showToast(
         newShowOnHome
           ? `"${p.name}" will now appear on the Home Page! 🏠`
-          : `"${p.name}" removed from Home Page.`
+          : `"${p.name}" removed from Home Page.`,
+        "success"
       );
     } catch (err: any) {
-      console.warn("Backend update notice:", err.message);
-      showToast(
-        newShowOnHome
-          ? `"${p.name}" set to show on Home Page!`
-          : `"${p.name}" removed from Home Page.`
-      );
+      console.error("Backend update showOnHome error:", err);
+      const errMsg = err.response?.data?.message || err.message || "Failed to update homepage status";
+      showToast(errMsg, "error");
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        logoutUser();
+        router.push("/admin/login");
+      }
     }
   };
 

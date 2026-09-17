@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { Product, useShop } from "@/context/ShopContext";
+import { apiService } from "@/services/api";
 import { FiStar, FiHeart, FiShoppingBag, FiPlus, FiMinus, FiCheckCircle } from "react-icons/fi";
 
 interface ClientProps {
@@ -15,11 +16,47 @@ interface ClientProps {
 
 export default function ProductDetailsClient({ productId, initialProduct }: ClientProps) {
   const { products, loading } = useShop();
+  const [liveProduct, setLiveProduct] = useState<Product | null>(null);
 
-  const product =
-    products.find(
-      (p) => p._id === productId || p.slug === productId || p.dbId === productId
-    ) || initialProduct;
+  useEffect(() => {
+    if (productId) {
+      apiService.products
+        .getOne(productId)
+        .then((data) => {
+          if (data && (data._id || data.slug)) {
+            setLiveProduct({
+              _id: String(data._id),
+              dbId: String(data._id),
+              slug: data.slug || String(data._id),
+              name: data.name,
+              description: data.description,
+              price: data.price,
+              originalPrice: data.originalPrice,
+              images: data.images && data.images.length > 0 ? data.images : ["/images/regular_pads.png"],
+              category: data.category,
+              stock: data.stock !== undefined ? data.stock : 50,
+              rating: data.rating || 5.0,
+              reviewsCount: data.reviewsCount || 0,
+              features: data.features || [],
+              variants: data.variants || [],
+              variantPrices: data.variantPrices || {},
+              variantOriginalPrices: data.variantOriginalPrices || {},
+              variantImages: data.variantImages || {},
+              showOnHome: Boolean(data.showOnHome),
+            });
+          }
+        })
+        .catch((err) => {
+          console.warn("[ProductDetailsClient] Could not fetch live product:", err.message);
+        });
+    }
+  }, [productId]);
+
+  const contextProduct = products.find(
+    (p) => p._id === productId || p.slug === productId || p.dbId === productId
+  );
+
+  const product = liveProduct || contextProduct || initialProduct;
 
   if (loading && !product) {
     return (

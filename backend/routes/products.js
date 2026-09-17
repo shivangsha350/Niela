@@ -166,25 +166,7 @@ router.put("/products/:id", protect, admin, async (req, res) => {
       const updatedProduct = await product.save();
       res.json(updatedProduct);
     } else {
-      // If not found, upsert a new product
-      const newProduct = new Product({
-        name,
-        description,
-        price,
-        originalPrice,
-        images,
-        category,
-        stock,
-        features,
-        variants,
-        slug: slug || req.params.id,
-        variantPrices: variantPrices || {},
-        variantOriginalPrices: variantOriginalPrices || {},
-        variantImages: variantImages || {},
-        showOnHome: Boolean(showOnHome),
-      });
-      const saved = await newProduct.save();
-      res.status(201).json(saved);
+      return res.status(404).json({ message: "Product not found. Cannot update a non-existent product." });
     }
   } catch (error) {
     res.status(400).json({ message: error.message });

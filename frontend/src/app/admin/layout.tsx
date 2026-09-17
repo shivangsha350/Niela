@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useShop } from "@/context/ShopContext";
+import apiService from "@/services/api";
 import { 
   FiGrid, 
   FiShoppingBag, 
@@ -24,17 +25,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [authorized, setAuthorized] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Authenticate Admin session status
+  // Authenticate Admin session status with backend JWT validation
   useEffect(() => {
     if (pathname === "/admin/login") {
       return;
     }
     if (!loading) {
-      if (!user || user.role !== "admin") {
+      const token = typeof window !== "undefined" ? localStorage.getItem("niela_token") : null;
+      if (!token || !user || user.role !== "admin") {
+        logoutUser();
         router.push("/admin/login");
-      } else {
-        setAuthorized(true);
+        return;
       }
+
+      // Verify token validity and admin privilege against backend
+      apiService.auth
+        .getProfile()
+        .then((profile: any) => {
+          if (profile && profile.role === "admin") {
+            setAuthorized(true);
+          } else {
+            logoutUser();
+            router.push("/admin/login");
+          }
+        })
+        .catch((err: any) => {
+          console.warn("[AdminLayout] Token validation error:", err?.response?.data?.message || err.message);
+          if (err?.response?.status === 401 || err?.response?.status === 403 || !err.response) {
+            logoutUser();
+            router.push("/admin/login");
+          }
+        });
     }
   }, [user, loading, router, pathname]);
 

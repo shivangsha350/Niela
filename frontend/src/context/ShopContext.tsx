@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { mockProducts } from "@/data/products";
 import { apiService } from "@/services/api";
 
@@ -55,6 +55,7 @@ interface ShopContextType {
   isInWishlist: (productId: string) => boolean;
   loginUser: (userData: User, jwtToken: string) => void;
   logoutUser: () => void;
+  refreshProducts: () => Promise<void>;
   cartCount: number;
   cartSubtotal: number;
 }
@@ -68,6 +69,40 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const refreshProducts = useCallback(async () => {
+    try {
+      const data = await apiService.products.getAll();
+      if (Array.isArray(data) && data.length > 0) {
+        const liveList: Product[] = data.map((item: any) => ({
+          _id: String(item._id),
+          dbId: String(item._id),
+          slug: item.slug || String(item._id),
+          name: item.name,
+          description: item.description,
+          price: item.price,
+          originalPrice: item.originalPrice,
+          images: item.images && item.images.length > 0 ? item.images : ["/images/regular_pads.png"],
+          category: item.category,
+          stock: item.stock !== undefined ? item.stock : 50,
+          rating: item.rating || 5.0,
+          reviewsCount: item.reviewsCount || 0,
+          features: item.features || [],
+          variants: item.variants || [],
+          variantPrices: item.variantPrices || {},
+          variantOriginalPrices: item.variantOriginalPrices || {},
+          variantImages: item.variantImages || {},
+          showOnHome: item.showOnHome !== undefined ? Boolean(item.showOnHome) : false,
+        }));
+        setProducts(liveList);
+        try {
+          localStorage.setItem("niela_admin_products", JSON.stringify(liveList));
+        } catch {}
+      }
+    } catch (err: any) {
+      console.warn("[ShopContext] Using cached/mock products:", err.message);
+    }
+  }, []);
 
   // Load state on mount and sync live products
   useEffect(() => {
@@ -99,39 +134,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
 
       // Fetch latest live products from backend MongoDB Atlas
-      apiService.products
-        .getAll()
-        .then((data: any[]) => {
-          if (Array.isArray(data) && data.length > 0) {
-            const liveList: Product[] = data.map((item: any) => ({
-              _id: item.slug || item._id,
-              dbId: item._id,
-              slug: item.slug || item._id,
-              name: item.name,
-              description: item.description,
-              price: item.price,
-              originalPrice: item.originalPrice,
-              images: item.images && item.images.length > 0 ? item.images : ["/images/regular_pads.png"],
-              category: item.category,
-              stock: item.stock !== undefined ? item.stock : 50,
-              rating: item.rating || 5.0,
-              reviewsCount: item.reviewsCount || 0,
-              features: item.features || [],
-              variants: item.variants || [],
-              variantPrices: item.variantPrices || {},
-              variantOriginalPrices: item.variantOriginalPrices || {},
-              variantImages: item.variantImages || {},
-              showOnHome: item.showOnHome !== undefined ? Boolean(item.showOnHome) : false,
-            }));
-            setProducts(liveList);
-            try {
-              localStorage.setItem("niela_admin_products", JSON.stringify(liveList));
-            } catch {}
-          }
-        })
-        .catch((err) => {
-          console.warn("[ShopContext] Using cached/mock products:", err.message);
-        });
+      refreshProducts();
 
       // Synchronize changes across browser tabs & local events
       const handleStorageUpdate = (e: StorageEvent) => {
@@ -159,7 +162,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         window.removeEventListener("niela_products_updated", handleCustomUpdate);
       };
     }
-  }, []);
+  }, [refreshProducts]);
 
   // Synchronize cart changes to local storage
   useEffect(() => {
@@ -295,6 +298,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isInWishlist,
         loginUser,
         logoutUser,
+        refreshProducts,
         cartCount,
         cartSubtotal,
       }}
